@@ -435,6 +435,39 @@ class RFIDEventosViewSet(viewsets.ViewSet):
         provided_token = request.headers.get("X-RFID-Token", "")
         return expected_token and provided_token == expected_token
 
+    def _active_command_payload(self, *, antenna: AntenaRFID, active: bool) -> dict:
+        if not active or not antenna.ativacao_expira_em:
+            return {}
+
+        broadcast_reader = (
+            AuditoriaLeitorStatus.objects.select_related("job")
+            .filter(
+                antena=antenna,
+                status=AuditoriaLeitorStatus.Status.ENERGIZADO,
+                job__status=AuditoriaJob.Status.INICIADO,
+                job__finaliza_em=antenna.ativacao_expira_em,
+            )
+            .order_by("-job__iniciado_em")
+            .first()
+        )
+        if broadcast_reader:
+            return {"audit": True, "auditoria_job_id": broadcast_reader.job_id}
+
+        timeline = (
+            TimelineEvento.objects.filter(
+                tipo=TimelineEvento.TipoEvento.SISTEMA,
+                metadados__evento="auditoria_iniciada",
+                metadados__antenna_id=antenna.id,
+                metadados__finaliza_em=antenna.ativacao_expira_em.isoformat(),
+            )
+            .order_by("-criado_em")
+            .first()
+        )
+        if timeline:
+            return {"audit": True}
+
+        return {}
+
     def create(self, request):
         if not self._validate_ingest_token(request):
             return Response(
@@ -509,6 +542,7 @@ class RFIDEventosViewSet(viewsets.ViewSet):
                 "active": active,
                 "active_for_seconds": active_for_seconds,
                 "expires_at": antenna.ativacao_expira_em if active else None,
+                "payload": self._active_command_payload(antenna=antenna, active=active),
             },
             status=status.HTTP_200_OK,
         )

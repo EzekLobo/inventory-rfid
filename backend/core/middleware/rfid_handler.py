@@ -6,7 +6,7 @@ from datetime import timedelta
 from django.utils import timezone
 from django.conf import settings
 
-from core.domain.models import AntenaRFID, ItemPatrimonial, LeituraRFID
+from core.domain.models import AntenaRFID, AuditoriaJob, AuditoriaLeitorStatus, ItemPatrimonial, LeituraRFID, TimelineEvento
 from core.domain.services import AuditoriaManager, AuditoriaReconciliacaoManager, SyncManager
 
 
@@ -123,6 +123,7 @@ class RFIDEventProcessor:
     def process_tags_read(self, *, antenna: AntenaRFID, tags: list[str], payload: dict | None = None) -> dict:
         self.deactivate_expired_antennas()
         antenna.refresh_from_db(fields=["ativa", "ativacao_expira_em"])
+        payload = self._payload_with_active_audit_context(antenna=antenna, payload=payload)
         is_audit = self.auditoria_reconciliacao_manager.is_audit_payload(payload)
         window_closed = (not antenna.ativa) or (
             antenna.ativacao_expira_em and antenna.ativacao_expira_em <= timezone.now()
@@ -172,6 +173,42 @@ class RFIDEventProcessor:
             "destino": len(tags) if antenna.tipo == AntenaRFID.TipoAntena.DESTINO else 0,
             "fluxo": len(tags) if antenna.tipo == AntenaRFID.TipoAntena.FLUXO else 0,
         }
+
+    def _payload_with_active_audit_context(self, *, antenna: AntenaRFID, payload: dict | None = None) -> dict:
+        payload = payload or {}
+        if self.auditoria_reconciliacao_manager.is_audit_payload(payload):
+            return payload
+        if not antenna.ativa or not antenna.ativacao_expira_em:
+            return payload
+
+        broadcast_reader = (
+            AuditoriaLeitorStatus.objects.select_related("job")
+            .filter(
+                antena=antenna,
+                status=AuditoriaLeitorStatus.Status.ENERGIZADO,
+                job__status=AuditoriaJob.Status.INICIADO,
+                job__finaliza_em=antenna.ativacao_expira_em,
+            )
+            .order_by("-job__iniciado_em")
+            .first()
+        )
+        if broadcast_reader:
+            return {**payload, "audit": True, "auditoria_job_id": broadcast_reader.job_id}
+
+        timeline = (
+            TimelineEvento.objects.filter(
+                tipo=TimelineEvento.TipoEvento.SISTEMA,
+                metadados__evento="auditoria_iniciada",
+                metadados__antenna_id=antenna.id,
+                metadados__finaliza_em=antenna.ativacao_expira_em.isoformat(),
+            )
+            .order_by("-criado_em")
+            .first()
+        )
+        if timeline:
+            return {**payload, "audit": True}
+
+        return payload
 
     def deactivate_expired_antennas(self) -> int:
         now = timezone.now()

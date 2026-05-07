@@ -45,14 +45,15 @@ def get_command():
     return response.json()
 
 
-def post_tags(tags):
+def post_tags(tags, payload=None):
+    event_payload = {**(payload or {}), "source": "comunicador_intermediario"}
     response = session.post(
         RFID_EVENTS_ENDPOINT,
         json={
             "event_type": "tags_read",
             "antenna_id": ANTENNA_ID,
             "tags": sorted(tags),
-            "payload": {"source": "comunicador_intermediario"},
+            "payload": event_payload,
         },
         headers=auth_headers(),
         timeout=REQUEST_TIMEOUT_SECONDS,
@@ -153,7 +154,7 @@ def abrir_janela_de_leitura(command):
         return
 
     try:
-        response = post_tags(tags_para_enviar)
+        response = post_tags(tags_para_enviar, command.get("payload"))
         print(f"Enviado tags_read com {len(tags_para_enviar)} tag(s): {response.status_code} {response.text}")
     except requests.exceptions.RequestException as exc:
         print(f"Erro ao enviar tags para API: {exc}")

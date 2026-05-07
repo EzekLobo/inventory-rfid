@@ -341,6 +341,7 @@ class PipelineAndApiTests(TestCase):
         )
         self.assertEqual(idle.status_code, 200)
         self.assertEqual(idle.data["command"], "idle")
+        self.assertEqual(idle.data["payload"], {})
 
         self.client.post(
             "/api/eventos/rfid/",
@@ -357,6 +358,60 @@ class PipelineAndApiTests(TestCase):
         self.assertEqual(active.data["command"], "start_reading")
         self.assertTrue(active.data["active"])
         self.assertGreaterEqual(active.data["active_for_seconds"], 0)
+        self.assertEqual(active.data["payload"], {})
+
+    def test_rfid_command_endpoint_includes_single_antenna_audit_payload(self):
+        self.client.force_authenticate(user=self.user)
+        RFIDEventProcessor().process_ping(antenna=self.destino_antenna)
+        audit_response = self.client.post(
+            f"/api/antenas/{self.destino_antenna.id}/auditar/",
+            {"duracao_segundos": 7},
+            format="json",
+        )
+        self.assertEqual(audit_response.status_code, 200)
+
+        command_response = self.client.get(
+            f"/api/eventos/rfid/comando/?antenna_id={self.destino_antenna.id}",
+            **self._rfid_headers(),
+        )
+        self.assertEqual(command_response.status_code, 200)
+        self.assertEqual(command_response.data["command"], "start_reading")
+        self.assertEqual(command_response.data["payload"], {"audit": True})
+
+        tags_response = self.client.post(
+            "/api/eventos/rfid/",
+            {
+                "event_type": "tags_read",
+                "antenna_id": self.destino_antenna.id,
+                "tags": [self.item.tag_id],
+                "payload": command_response.data["payload"],
+            },
+            format="json",
+            **self._rfid_headers(),
+        )
+        self.assertEqual(tags_response.status_code, 201)
+        self.assertTrue(
+            TimelineEvento.objects.filter(
+                tipo=TimelineEvento.TipoEvento.SISTEMA,
+                metadados__evento="auditoria_processada",
+            ).exists()
+        )
+
+    def test_rfid_command_endpoint_includes_broadcast_audit_payload(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post("/api/auditoria/broadcast/", {"duracao_segundos": 8}, format="json")
+        self.assertEqual(response.status_code, 200)
+
+        command_response = self.client.get(
+            f"/api/eventos/rfid/comando/?antenna_id={self.destino_antenna.id}",
+            **self._rfid_headers(),
+        )
+        self.assertEqual(command_response.status_code, 200)
+        self.assertEqual(command_response.data["command"], "start_reading")
+        self.assertEqual(
+            command_response.data["payload"],
+            {"audit": True, "auditoria_job_id": response.data["auditoria_job_id"]},
+        )
 
     def test_manual_deactivation_marks_item_inactive_and_registers_timeline(self):
         self.client.force_authenticate(user=self.user)
@@ -661,5 +716,40 @@ class PipelineAndApiTests(TestCase):
             TimelineEvento.objects.filter(
                 tipo=TimelineEvento.TipoEvento.SISTEMA,
                 metadados__evento="auditoria_processada",
+            ).exists()
+        )
+
+    def test_tags_read_without_payload_is_audit_when_antenna_audit_window_is_active(self):
+        self.client.force_authenticate(user=self.user)
+        RFIDEventProcessor().process_ping(antenna=self.destino_antenna)
+        audit_response = self.client.post(
+            f"/api/antenas/{self.destino_antenna.id}/auditar/",
+            {"duracao_segundos": 7},
+            format="json",
+        )
+        self.assertEqual(audit_response.status_code, 200)
+
+        response = self.client.post(
+            "/api/eventos/rfid/",
+            {
+                "event_type": "tags_read",
+                "antenna_id": self.destino_antenna.id,
+                "tags": [self.item.tag_id],
+                "payload": {"source": "comunicador_intermediario"},
+            },
+            format="json",
+            **self._rfid_headers(),
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(response.data["audit"]["audit"])
+        self.assertEqual(response.data["processed"]["destino"], 1)
+        self.item.refresh_from_db()
+        self.assertIsNone(self.item.local_fisico_id)
+        self.assertTrue(
+            TimelineEvento.objects.filter(
+                tipo=TimelineEvento.TipoEvento.SISTEMA,
+                metadados__evento="auditoria_processada",
+                metadados__source="comunicador_intermediario",
             ).exists()
         )
