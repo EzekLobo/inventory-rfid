@@ -1,0 +1,44 @@
+\chapter{Revisão de Literatura}
+\label{capII_refTeo}
+
+\section{Controle patrimonial e inventário}
+
+O inventário patrimonial é o processo pelo qual uma instituição verifica a existência, localização e condição de seus bens permanentes. Em organizações públicas, essa atividade possui relevância administrativa e legal, pois contribui para a transparência, a prestação de contas e a conservação dos recursos públicos \cite{tceba2018}. Entretanto, quando executado predominantemente de forma manual, o inventário pode tornar-se lento, repetitivo e suscetível a falhas de registro.
+
+Em processos tradicionais, a conferência de bens costuma depender da identificação visual de plaquetas, números de tombamento ou códigos de barras. Embora esses mecanismos sejam amplamente utilizados, eles exigem leitura individual e, em muitos casos, contato visual direto com o item. Essa limitação reduz a eficiência do processo quando há grande quantidade de equipamentos, ambientes distintos ou movimentação frequente de ativos \cite{oliveira2021}. Em instituições públicas, estudos também apontam a necessidade de soluções que aumentem a confiabilidade e a rastreabilidade do controle patrimonial \cite{brito2019}.
+
+No contexto deste trabalho, considera-se que o inventário patrimonial envolve duas dimensões complementares. A primeira é o inventário lógico, representado pelos dados cadastrados no sistema, como item, etiqueta, responsável e local esperado. A segunda é o inventário físico, correspondente à situação detectada no ambiente real, isto é, a presença ou ausência do item em determinado local. A divergência entre essas duas dimensões caracteriza inconsistências que precisam ser registradas, analisadas e resolvidas.
+
+\section{Tecnologia RFID}
+
+A Identificação por Radiofrequência, ou RFID, é uma tecnologia de identificação automática baseada na comunicação por ondas de rádio entre leitores e etiquetas. De modo geral, uma etiqueta RFID armazena um identificador associado a um objeto, enquanto o leitor é responsável por capturar esse identificador e enviá-lo a um sistema de informação. Essa tecnologia é empregada em diferentes aplicações de rastreabilidade, controle de acesso, logística, gestão de estoques e inventário \cite{ting2013,alwadi2017}.
+
+Uma das vantagens do RFID em relação a métodos ópticos é a menor dependência de linha de visada. Em cenários adequadamente configurados, a tecnologia pode reduzir o esforço de conferência e aumentar a velocidade de identificação de itens \cite{alwadi2017,ting2013}. Revisões recentes também destacam que sistemas baseados em RFID podem melhorar a eficiência operacional e a consistência dos dados, especialmente quando integrados a processos automatizados de inventário \cite{budiyanto2024,mashayekhy2022}.
+
+Apesar dessas vantagens, a adoção de RFID exige cautela. O desempenho da leitura pode ser influenciado por tipo de etiqueta, frequência, potência, distância, interferências eletromagnéticas, presença de superfícies metálicas e características do ambiente. Além disso, leitores, antenas e infraestrutura podem representar custos relevantes dependendo da escala da implantação \cite{budiyanto2024,ting2013}. Revisões sobre interferência em instalações RFID indicam que componentes, sinais elétricos, ambiente físico e condições ambientais podem afetar as taxas de leitura \cite{knapp2022}. Por essa razão, em um protótipo acadêmico, é necessário diferenciar a validação do fluxo lógico de software da validação completa de uma infraestrutura física de leitura em larga escala.
+
+\section{RFID, Internet das Coisas e middleware}
+
+A integração entre RFID e sistemas de informação aproxima-se do conceito de Internet das Coisas, no qual objetos físicos passam a gerar eventos digitais capazes de alimentar aplicações computacionais. Nesse cenário, uma etiqueta RFID associada a um bem patrimonial permite que o item seja identificado por dispositivos de captura e tenha sua presença registrada em uma plataforma de gerenciamento \cite{abijaude2017}.
+
+Para que essa integração ocorra de forma organizada, é comum a utilização de uma camada intermediária, ou middleware, responsável por receber eventos de dispositivos, normalizar dados, aplicar regras de negócio e encaminhar as informações para persistência. Essa camada evita que a aplicação principal dependa diretamente de um único modelo de leitor ou de um protocolo específico de hardware. Em vez disso, diferentes dispositivos podem ser integrados desde que enviem eventos compatíveis com a interface esperada pelo sistema \cite{alwadi2017,razzaque2015}.
+
+No contexto deste trabalho, essa abordagem é fundamental para a escalabilidade da solução. A arquitetura proposta admite um cenário em que sensores de presença, como sensores infravermelhos, acionem a API para abrir uma janela de leitura em uma antena RFID. Após o acionamento, as tags capturadas seriam enviadas ao backend para processamento. Na validação realizada, esse mesmo fluxo lógico foi simplificado por meio de um leitor RFID de proximidade conectado a um computador intermediário, preservando a lógica de evento, processamento e atualização do inventário.
+
+\section{Auditoria patrimonial e inconsistências}
+
+A auditoria patrimonial consiste na verificação sistemática entre os registros existentes e a situação física dos bens. Em um sistema informatizado, essa atividade pode ser apoiada por mecanismos de comparação entre itens esperados e itens detectados durante uma janela de leitura. A realização de inventário e o acompanhamento de movimentações são práticas relevantes para a gestão e o controle de bens patrimoniais \cite{tceba2018}. Quando um item esperado não é encontrado, quando uma tag desconhecida é capturada ou quando um item é detectado em local diferente do cadastrado, o sistema pode registrar uma inconsistência para posterior análise.
+
+Essa abordagem contribui para tornar o inventário mais rastreável. Em vez de depender apenas de anotações manuais, o sistema mantém histórico de eventos, leituras, movimentações e divergências. Com isso, é possível acompanhar a evolução do estado de cada bem, identificar padrões de movimentação e apoiar decisões administrativas. O uso de logs e notificações de inconsistência também favorece a transparência do processo e a organização das ações corretivas.
+
+Entretanto, a auditoria automatizada depende da qualidade das leituras e da correta associação entre etiquetas e bens. Leituras duplicadas, ausência de leitura e tags não cadastradas são situações que devem ser tratadas pelo software. Portanto, um protótipo de inventário com RFID deve contemplar não apenas o cadastro e a leitura de itens, mas também regras para validação, deduplicação, classificação de eventos e tratamento de divergências.
+
+\section{Trabalhos relacionados}
+
+Estudos sobre RFID em inventário destacam sua utilidade em ambientes que exigem agilidade e confiabilidade na identificação de itens. \citeonline{alwadi2017} apresentam uma visão geral de soluções inteligentes para inventário baseadas em RFID, enfatizando a integração entre dispositivos de captura e sistemas de gerenciamento. \citeonline{mashayekhy2022} discutem impactos de IoT sobre a gestão de inventários, incluindo RFID, sensores e middleware. \citeonline{budiyanto2024} discutem benefícios e barreiras da tecnologia, indicando que ganhos de eficiência dependem de planejamento adequado e tratamento de limitações técnicas.
+
+No contexto brasileiro, \citeonline{brito2019} analisam a viabilidade de etiquetas inteligentes na administração pública, aproximando a discussão do controle patrimonial institucional. \citeonline{oliveira2021} revisam o uso de RFID na gestão de estoques e reforçam limitações dos métodos tradicionais de conferência. Já \citeonline{abijaude2017} apresentam uma plataforma de gerenciamento automatizado de inventário relacionada ao conceito de Internet das Coisas, aspecto alinhado à proposta deste trabalho.
+
+Quanto à implantação de sistemas RFID, \citeonline{ting2013} propõem um framework de implementação e destacam que a adoção da tecnologia exige planejamento, análise de custos, riscos e limitações técnicas. \citeonline{knapp2022}, por sua vez, sistematizam fontes de interferência que podem comprometer o desempenho de instalações RFID. Essas contribuições reforçam a necessidade de tratar a validação física de alcance e taxa de leitura como uma etapa distinta da validação funcional do software.
+
+Este TCC diferencia-se por implementar um protótipo web completo para gestão patrimonial com cadastro de leitores, locais, itens, eventos RFID, auditoria, inconsistências e histórico operacional. A validação com leitor de proximidade de baixo custo não esgota a análise física da tecnologia RFID, mas demonstra a viabilidade do fluxo computacional necessário para que a solução seja posteriormente integrada a dispositivos de maior alcance ou sensores de acionamento.

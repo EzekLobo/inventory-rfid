@@ -1,0 +1,73 @@
+%-----------------------------------------------------------------------
+\chapter{Implementação da Solução e Resultados}
+
+\section{Visão geral da implementação}
+
+O protótipo implementado consiste em uma aplicação web para gerenciamento de inventário patrimonial com apoio de eventos RFID. A solução permite cadastrar locais, leitores RFID e itens patrimoniais, associando cada item a uma etiqueta. Além disso, disponibiliza recursos para acionar janelas de leitura, registrar eventos, atualizar a localização física de ativos, identificar inconsistências e consultar o histórico operacional.
+
+A implementação foi organizada de forma modular. O frontend concentra as telas de interação com o usuário, incluindo painel inicial, configurações, patrimônio, leitores RFID, auditoria, inconsistências e log operacional. O backend disponibiliza uma API REST responsável por persistência, validação e aplicação das regras de negócio. Na validação com o leitor de proximidade, utilizou-se um adaptador intermediário de integração capaz de capturar a tag lida pelo dispositivo e encaminhar o evento ao sistema.
+
+Esse adaptador foi necessário porque o leitor empregado opera como dispositivo de entrada local e não possui comunicação HTTP nativa. Assim, sua utilização decorre de uma limitação de interface do equipamento disponível para o experimento, e não de uma restrição da API proposta. Essa organização permite que o leitor utilizado na validação seja substituído futuramente por outros dispositivos de captura. A condição para essa substituição é que o novo dispositivo, ou um gateway associado a ele, envie à API REST eventos compatíveis com o formato esperado. Portanto, embora a validação tenha sido realizada com leitor RFID de proximidade de baixo custo, a arquitetura não fica restrita a esse equipamento.
+
+\section{Cadastro de locais, leitores e itens}
+
+O cadastro de locais representa os espaços nos quais os bens podem estar logicamente alocados ou fisicamente detectados. Cada local possui identificação própria e é utilizado como referência para leitores RFID e itens patrimoniais. Essa modelagem permite comparar a localização esperada de um item com a localização detectada em uma leitura.
+
+Os leitores RFID são cadastrados com identificador de hardware, local associado e tipo de operação. A distinção entre leitores do tipo destino e leitores do tipo fluxo permite representar comportamentos distintos. Um leitor de destino pode atualizar a localização física de um item, enquanto um leitor de fluxo pode apenas registrar a passagem de uma tag por determinado ponto. Essa decisão de modelagem é relevante para uma arquitetura escalável, pois possibilita que diferentes pontos de captura tenham funções distintas no processo de inventário.
+
+Os itens patrimoniais são cadastrados com tag RFID, nome, local lógico, local físico e estado de atividade. A tag funciona como vínculo entre o objeto físico e sua representação no sistema. Quando uma leitura é recebida, o backend verifica se a tag está cadastrada e decide qual ação deve ser executada, como atualização de local, geração de histórico ou registro de inconsistência.
+
+\section{Fluxo de eventos RFID}
+
+O fluxo principal inicia-se com a ativação de uma janela de leitura. Essa janela representa o intervalo no qual o sistema espera receber eventos de determinado leitor. Em uma implantação escalável, essa ativação poderia ser causada por um sensor infravermelho ou outro sensor de presença, que acionaria a API para habilitar uma antena RFID em determinado ponto. No protótipo validado, a leitura foi realizada por um dispositivo de proximidade, e o adaptador intermediário de integração ficou responsável por converter a tag capturada em requisição HTTP enviada ao backend.
+
+Ao receber um evento RFID, a API executa etapas de validação e processamento. Inicialmente, verifica a autenticidade da requisição e a existência do leitor. Em seguida, normaliza as tags recebidas, trata leituras duplicadas em curto intervalo e verifica se a leitura ocorreu durante uma janela ativa. Quando a tag corresponde a um item cadastrado, o sistema registra a leitura e atualiza o estado do item conforme o tipo do leitor. Quando a tag não está cadastrada, o sistema pode registrar uma inconsistência de tag desconhecida.
+
+Esse fluxo evidencia a separação entre hardware e regra de negócio. O leitor é responsável apenas por capturar a identificação; a API concentra a interpretação do evento. Essa separação é um dos elementos que tornam a aplicação extensível, pois diferentes dispositivos podem atuar como fonte de eventos sem exigir reescrita completa das regras do sistema.
+
+\section{Auditoria, inconsistências e log operacional}
+
+A funcionalidade de auditoria permite comparar os itens esperados em um local com as tags efetivamente detectadas durante uma janela de leitura. A partir dessa comparação, o sistema pode classificar situações como item encontrado, item ausente, item em local divergente ou tag desconhecida. Essa classificação auxilia o processo de conferência patrimonial, pois transforma leituras isoladas em informações operacionais.
+
+As inconsistências geradas pelo sistema registram divergências entre o inventário lógico e o inventário físico. Um item pode estar logicamente associado a determinado local, mas ser detectado em outro. Também pode ocorrer de uma tag ser lida sem estar cadastrada, indicando necessidade de investigação. O registro dessas inconsistências permite que o usuário acompanhe pendências e resolva divergências de forma organizada.
+
+O log operacional mantém o histórico dos eventos relevantes do sistema. Esse histórico inclui movimentações, leituras, auditorias e alterações de estado. Em um contexto de controle patrimonial, esse recurso é importante porque permite rastrear ações e compreender como o estado de um item foi modificado ao longo do tempo.
+
+\section{Interface do sistema}
+
+A interface web foi organizada para apoiar o fluxo de uso do sistema. O painel inicial apresenta uma visão geral do inventário e das atividades recentes. A área de configurações permite cadastrar locais, leitores e itens patrimoniais. A tela de leitores permite acionar janelas de sincronização e auditoria. A tela de patrimônio apresenta os itens cadastrados e suas localizações. A tela de inconsistências permite consultar divergências detectadas, enquanto o log operacional centraliza o histórico de eventos.
+
+Para documentação do TCC, recomenda-se utilizar capturas de tela do dashboard, da tela de configurações, da listagem de leitores, da auditoria, da tela de inconsistências, da consulta de patrimônio e do log operacional. Essas evidências ajudam a demonstrar que a solução não se limita ao processamento interno da API, mas oferece interface de uso para acompanhamento do inventário.
+
+\section{Resultados da validação funcional}
+
+A validação funcional foi realizada em ambiente controlado, utilizando um computador pessoal, um leitor RFID de proximidade de baixo custo e uma única tag RFID. O leitor empregado exige aproximação direta da tag para captura do identificador, diferindo de uma infraestrutura RFID de maior alcance. Assim, os testes tiveram como objetivo verificar o fluxo lógico da aplicação: leitura da tag, captura pelo adaptador intermediário, envio do evento à API REST, processamento pelo backend, persistência dos dados e atualização das informações de inventário. Não foram avaliados alcance, leitura simultânea de múltiplas tags ou desempenho físico de antenas RFID. A Tabela \ref{tab:testes-funcionais} resume os principais cenários de validação previstos para o sistema, organizados a partir da relação entre procedimento executado, resultado esperado e resultado observado, conforme práticas de documentação de testes de software \cite{iso29119}.
+
+\begin{table}[H]
+\centering
+\caption{Cenários de validação funcional do protótipo}
+\label{tab:testes-funcionais}
+\begin{tabular}{|p{3.2cm}|p{4.1cm}|p{4.1cm}|p{2.7cm}|}
+\hline
+\textbf{Cenário} & \textbf{Procedimento} & \textbf{Resultado esperado} & \textbf{Resultado observado} \\
+\hline
+Cadastro básico & Cadastrar local, leitor RFID e item patrimonial com a tag disponível no experimento. & Registros disponíveis para consulta e uso nos fluxos de leitura. & A preencher com evidência do teste. \\
+\hline
+Leitura válida & Ativar janela de leitura e aproximar a tag cadastrada do leitor de proximidade. & Sistema registra a leitura e atualiza o local físico conforme o leitor. & A preencher com evidência do teste. \\
+\hline
+Tag desconhecida & Enviar código de tag não cadastrado, caso o adaptador ou a API sejam utilizados para simulação controlada. & Sistema registra evento e sinaliza inconsistência de tag desconhecida. & Cenário dependente de simulação ou de segunda tag; preencher somente se executado. \\
+\hline
+Local divergente & Associar o item a local lógico diferente do local vinculado ao leitor e aproximar a tag cadastrada. & Sistema identifica divergência entre localização lógica e física. & A preencher com evidência do teste. \\
+\hline
+Duplicidade & Aproximar a mesma tag repetidamente do leitor em curto intervalo. & Sistema ignora ou consolida leituras duplicadas conforme regra de deduplicação. & A preencher com evidência do teste. \\
+\hline
+Auditoria & Executar janela de auditoria para um local utilizando a tag disponível no experimento. & Sistema classifica o item lido e permite identificar ausências conforme os itens cadastrados para o local. & Validação parcial com uma tag; preencher com evidência do teste executado. \\
+\hline
+Leitor offline & Interromper o adaptador intermediário, desconectar o leitor ou simular falha de envio de evento. & Sistema bloqueia, sinaliza ou registra falha de comunicação sem comprometer os dados. & A preencher com evidência do teste. \\
+\hline
+\end{tabular}
+\end{table}
+
+Como os resultados quantitativos dependem de medições específicas do experimento, não foram assumidos valores de acurácia, alcance, taxa de leitura ou tempo de resposta sem evidência. A validação apresentada deve ser complementada com registros reais, como prints, logs e tabelas de execução. Ainda assim, a implementação demonstra que o fluxo essencial da solução foi contemplado: o sistema cadastra entidades, recebe eventos RFID, processa leituras, atualiza o inventário, gera histórico e identifica inconsistências. Essa forma de avaliação deve ser entendida como validação funcional do protótipo no escopo definido, e não como certificação de desempenho físico da tecnologia RFID em ambiente real de larga escala \cite{ieee1012,knapp2022}.
+
+Portanto, o resultado principal do protótipo é a comprovação funcional da arquitetura de software. A validação com computador pessoal, leitor de proximidade e uma tag demonstra que a aplicação é capaz de operar com eventos RFID reais em ambiente controlado, comprovando o fluxo computacional necessário ao inventário com RFID. A evolução para sensores infravermelhos e antenas RFID de maior alcance permanece como continuidade natural da proposta, exigindo novos testes físicos de alcance, taxa de leitura, interferência e leitura simultânea.

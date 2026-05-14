@@ -1,0 +1,39 @@
+\chapter{Introdução}
+
+O controle patrimonial constitui uma atividade essencial em instituições públicas, pois está diretamente relacionado à rastreabilidade dos bens permanentes, à prestação de contas e ao uso adequado dos recursos institucionais. Em ambientes universitários, essa atividade tende a apresentar maior complexidade devido à quantidade de equipamentos distribuídos em laboratórios, salas administrativas e demais espaços de uso compartilhado. Nesse contexto, processos baseados em conferência manual ou em identificação visual individual podem gerar atrasos, inconsistências e dificuldades para manter o inventário físico alinhado aos registros administrativos \cite{tceba2018,brito2019}.
+
+No Colegiado de Ciência da Computação da Universidade Estadual de Santa Cruz, a gestão de ativos envolve equipamentos que podem ser utilizados por diferentes usuários e em diferentes ambientes. A ausência de mecanismos automatizados de identificação e atualização dificulta a verificação frequente da localização dos bens e torna o processo de inventário dependente de intervenção humana. Esse cenário é compatível com limitações observadas em estudos sobre gestão patrimonial e controle de estoques, nos quais métodos tradicionais, como conferência visual e código de barras, são apontados como menos eficientes em contextos com grande volume de itens \cite{brito2019,oliveira2021}.
+
+A tecnologia de Identificação por Radiofrequência, conhecida como RFID, apresenta-se como alternativa para automatizar parte desse processo. Diferentemente de soluções ópticas, a identificação por radiofrequência permite que etiquetas sejam reconhecidas por leitores compatíveis, sem a mesma dependência de contato visual direto. Essa característica favorece aplicações de inventário, rastreabilidade e auditoria, especialmente quando integrada a sistemas de informação capazes de armazenar, processar e apresentar os eventos de leitura \cite{alwadi2017,budiyanto2024,mashayekhy2022}.
+
+Este trabalho propõe e implementa um protótipo funcional de software para inventário patrimonial baseado em RFID, voltado ao contexto do Colegiado de Ciência da Computação. A solução foi concebida com arquitetura modular, composta por frontend, backend com API REST, banco de dados e processamento de eventos RFID. Em sua concepção escalável, a aplicação pode receber eventos gerados por diferentes dispositivos de captura, incluindo sensores de presença, leitores RFID de maior alcance e antenas instaladas em pontos estratégicos. Para fins de validação prática, entretanto, utilizou-se um leitor RFID de proximidade de baixo custo, disponível para o experimento, com o objetivo de comprovar o funcionamento do fluxo lógico da solução.
+
+Essa delimitação é importante para o rigor do trabalho. A validação realizada não tem como objetivo demonstrar o desempenho de uma infraestrutura RFID industrial, nem medir alcance de antenas de longo alcance. O foco está na comprovação do pipeline de software: cadastro de ativos e leitores, captura da identificação da etiqueta, envio do evento à API, processamento da leitura, persistência dos dados, atualização da localização física e geração de registros de auditoria e inconsistências. Essa distinção é coerente com a separação entre validação funcional de sistemas e avaliação completa de desempenho em ambiente operacional \cite{ieee1012}. Assim, a contribuição principal do trabalho está na arquitetura e na implementação do sistema, bem como na demonstração de sua viabilidade funcional em um cenário controlado.
+
+\section{Objetivos}
+
+\subsection{Objetivo Geral}
+
+Desenvolver um protótipo funcional de sistema web para inventário patrimonial baseado em RFID, capaz de registrar ativos, leitores, locais e eventos de leitura, permitindo a atualização do estado físico dos bens e o apoio à auditoria patrimonial no Colegiado de Ciência da Computação da UESC.
+
+\subsection{Objetivos Específicos}
+
+Os objetivos específicos deste trabalho são:
+
+\begin{enumerate}
+    \item Levantar os requisitos essenciais para o controle de ativos patrimoniais no contexto do colegiado.
+    \item Projetar uma arquitetura modular composta por frontend, backend com API REST, banco de dados e integração com eventos RFID.
+    \item Implementar funcionalidades de cadastro de locais, leitores RFID e itens patrimoniais associados a etiquetas.
+    \item Implementar o fluxo de recebimento, validação, processamento e persistência de leituras RFID.
+    \item Disponibilizar mecanismos de auditoria, histórico operacional e identificação de inconsistências entre inventário lógico e físico.
+    \item Validar funcionalmente o protótipo com leitor RFID de proximidade de baixo custo, evidenciando o funcionamento do fluxo principal da solução.
+\end{enumerate}
+
+\section{Motivação e Justificativa}
+\label{sec:justificativa}
+
+A motivação deste trabalho decorre da necessidade de reduzir a dependência de processos manuais no controle patrimonial. A conferência individual de bens demanda tempo, atenção e disponibilidade operacional, além de estar sujeita a erros de registro, esquecimento de atualização e divergências entre a localização real dos itens e a localização registrada. Em ambientes acadêmicos, essas dificuldades são ampliadas pela circulação de equipamentos entre laboratórios, setores e responsáveis \cite{tceba2018,brito2019}.
+
+A adoção de RFID no contexto de inventário patrimonial permite explorar uma forma de identificação automatizada e integrada a sistemas de informação. Estudos sobre RFID em gestão de estoques e patrimônio indicam ganhos potenciais de rastreabilidade, redução de falhas humanas e aumento de confiabilidade nas informações registradas \cite{brito2019,oliveira2021,budiyanto2024,mashayekhy2022}. Além disso, arquiteturas baseadas em eventos, APIs e camadas intermediárias favorecem a integração entre dispositivos físicos e aplicações web, aproximando a solução de abordagens de Internet das Coisas \cite{abijaude2017,alwadi2017,razzaque2015}.
+
+Do ponto de vista institucional, o protótipo contribui como base tecnológica para modernizar o controle patrimonial do colegiado. Do ponto de vista acadêmico, o trabalho permite integrar conceitos de desenvolvimento web, modelagem de dados, APIs REST, processamento de eventos e validação experimental com hardware acessível. A escolha por um leitor de proximidade de baixo custo, embora limite a avaliação de alcance e leitura em massa, é adequada para validar a lógica computacional do sistema e demonstrar que a aplicação pode evoluir para dispositivos RFID mais robustos, desde que estes comuniquem seus eventos à API definida. Essa cautela é relevante porque implantações RFID podem ser afetadas por fatores de ambiente, componentes e interferência, exigindo ensaios específicos para avaliação física da solução \cite{ting2013,knapp2022}.
