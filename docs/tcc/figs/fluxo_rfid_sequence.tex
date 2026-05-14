@@ -1,0 +1,47 @@
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tikzpicture}[
+    font=\scriptsize,
+    lane/.style={draw, rounded corners=3pt, align=center, minimum width=2.2cm, minimum height=0.7cm, fill=gray!8},
+    rfidstep/.style={draw, rounded corners=3pt, align=center, minimum width=2.5cm, minimum height=0.75cm, fill=white},
+    proto/.style={rfidstep, fill=green!10, draw=green!45!black},
+    future/.style={rfidstep, fill=orange!12, draw=orange!70!black},
+    api/.style={rfidstep, fill=blue!8, draw=blue!55},
+    arrow/.style={->, thick, >=latex},
+    dasharrow/.style={->, thick, dashed, >=latex}
+]
+
+\node[lane, fill=green!15] (vtitle) at (0,4.5) {Fluxo validado fisicamente};
+\node[proto] (usuario) at (0,3.35) {Usuario aciona\\ janela de leitura};
+\node[api] (api1) at (0,2.15) {API registra\\ janela ativa};
+\node[proto] (gateway) at (0,0.95) {Comunicador consulta\\ comando};
+\node[proto] (usb) at (0,-0.25) {Leitor USB recebe\\ UID da tag};
+\node[api] (tags1) at (0,-1.45) {Gateway envia\\ \textit{tags\_read}};
+
+\draw[arrow] (usuario) -- (api1);
+\draw[arrow] (api1) -- node[right]{\textit{start\_reading}} (gateway);
+\draw[arrow] (gateway) -- (usb);
+\draw[arrow] (usb) -- (tags1);
+
+\node[lane, fill=orange!18] (ftitle) at (6.1,4.5) {Fluxo escalavel verificado por software};
+\node[future] (sensor) at (6.1,3.35) {Sensor ou gateway envia\\ \textit{motion\_detected}};
+\node[api] (api2) at (6.1,2.15) {API abre janela\\ da antena};
+\node[future] (antena) at (6.1,0.95) {Leitor conectado\\ recebe comando};
+\node[future] (rede) at (6.1,-0.25) {Antena captura\\ tags no ambiente};
+\node[api] (tags2) at (6.1,-1.45) {Dispositivo envia\\ \textit{tags\_read}};
+
+\draw[arrow] (sensor) -- (api2);
+\draw[arrow] (api2) -- node[right]{\textit{start\_reading}} (antena);
+\draw[arrow] (antena) -- (rede);
+\draw[arrow] (rede) -- (tags2);
+
+\node[api, text width=4.8cm] (proc) at (3.05,-3.0) {Backend normaliza tags, remove duplicidades, valida janela, atualiza inventario, registra historico e inconsistencias};
+\draw[dasharrow] (tags1) -- (proc);
+\draw[dasharrow] (tags2) -- (proc);
+
+\end{tikzpicture}
+}
+\caption{Fluxo de eventos RFID suportado pela arquitetura}
+\label{fig:fluxo-eventos-rfid}
+\end{figure}

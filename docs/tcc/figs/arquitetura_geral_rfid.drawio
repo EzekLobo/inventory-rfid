@@ -1,0 +1,200 @@
+<mxfile host="app.diagrams.net" modified="2026-05-14T00:00:00.000Z" agent="Codex" version="24.7.17" type="device">
+  <diagram name="Arquitetura geral RFID" id="arquitetura-geral-rfid">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="Sistema Web de Inventario RFID - visao geral" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontStyle=1;fontSize=22;" vertex="1" parent="1">
+          <mxGeometry x="260" y="18" width="650" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="futureZone" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9e6;strokeColor=#d79b00;dashed=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="250" width="330" height="420" as="geometry"/>
+        </mxCell>
+        <mxCell id="coreZone" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f7fbff;strokeColor=#6c8ebf;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="400" y="78" width="370" height="570" as="geometry"/>
+        </mxCell>
+        <mxCell id="validZone" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f2fbf0;strokeColor=#82b366;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="800" y="250" width="330" height="420" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="futureTitle" value="Fluxo previsto / escalavel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d79b00;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="88" y="270" width="235" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="coreTitle" value="Nucleo do sistema" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="485" y="95" width="200" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="validTitle" value="Fluxo validado / baixo custo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="845" y="270" width="240" height="34" as="geometry"/>
+        </mxCell>
+
+        <!-- Usuarios -->
+        <mxCell id="admin" value="Administrador" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="92" y="90" width="45" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="adminPc" value="" style="shape=image;html=1;image=img/lib/clip_art/computers/Laptop_128x128.png;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="155" y="74" width="82" height="82" as="geometry"/>
+        </mxCell>
+        <mxCell id="userPc" value="" style="shape=image;html=1;image=img/lib/clip_art/computers/Laptop_128x128.png;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="930" y="74" width="82" height="82" as="geometry"/>
+        </mxCell>
+        <mxCell id="user" value="Usuario" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1032" y="90" width="45" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- Nucleo com cliparts nativos -->
+        <mxCell id="serverIcon" value="" style="shape=image;html=1;image=img/lib/clip_art/computers/Server_Tower_128x128.png;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="455" y="150" width="90" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="serverLabel" value="Servidor Web" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="445" y="238" width="110" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="middlewareIcon" value="" style="shape=image;html=1;image=img/lib/clip_art/computers/Software_128x128.png;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="555" y="150" width="70" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="middlewareLabel" value="Middleware" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="535" y="238" width="110" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="dbIcon" value="" style="shape=image;html=1;image=img/lib/clip_art/computers/Database_128x128.png;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="635" y="150" width="88" height="88" as="geometry"/>
+        </mxCell>
+        <mxCell id="dbLabel" value="Banco de Dados" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="615" y="238" width="130" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="apiBox" value="API REST&#xa;Middleware RFID" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="500" y="315" width="170" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="routerIcon" value="" style="shape=image;html=1;image=img/lib/clip_art/networking/Wireless_Router_N_128x128.png;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="525" y="430" width="120" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="routerLabel" value="Rede / roteamento" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="505" y="510" width="160" height="25" as="geometry"/>
+        </mxCell>
+
+        <!-- Fluxo futuro -->
+        <mxCell id="sensorIcon" value="" style="shape=image;html=1;image=img/lib/clip_art/networking/Wireless_Router_128x128.png;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="80" y="330" width="85" height="85" as="geometry"/>
+        </mxCell>
+        <mxCell id="sensorLabel" value="Sensor IR" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="68" y="413" width="110" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="readerNetIcon" value="" style="shape=image;html=1;image=img/lib/clip_art/networking/Wireless_Router_N_128x128.png;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="232" y="330" width="88" height="88" as="geometry"/>
+        </mxCell>
+        <mxCell id="readerNetLabel" value="Leitor / antena&#xa;com rede" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="220" y="415" width="120" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="antenasLabel" value="antenas e pontos de leitura" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="92" y="565" width="230" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="antennaA1" value="A1" style="sketch=0;html=1;pointerEvents=1;dashed=0;fillColor=none;strokeColor=none;strokeWidth=2;verticalLabelPosition=bottom;verticalAlign=top;align=center;outlineConnect=0;shape=mxgraph.cisco.wireless.antenna;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="480" width="55" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="antennaA2" value="A2" style="sketch=0;html=1;pointerEvents=1;dashed=0;fillColor=none;strokeColor=none;strokeWidth=2;verticalLabelPosition=bottom;verticalAlign=top;align=center;outlineConnect=0;shape=mxgraph.cisco.wireless.antenna;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="145" y="480" width="55" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="antennaA3" value="A3" style="sketch=0;html=1;pointerEvents=1;dashed=0;fillColor=none;strokeColor=none;strokeWidth=2;verticalLabelPosition=bottom;verticalAlign=top;align=center;outlineConnect=0;shape=mxgraph.cisco.wireless.antenna;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="210" y="480" width="55" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="antennaA4" value="A4" style="sketch=0;html=1;pointerEvents=1;dashed=0;fillColor=none;strokeColor=none;strokeWidth=2;verticalLabelPosition=bottom;verticalAlign=top;align=center;outlineConnect=0;shape=mxgraph.cisco.wireless.antenna;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="275" y="480" width="55" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Fluxo validado -->
+        <mxCell id="localPcIcon" value="" style="shape=image;html=1;image=img/lib/clip_art/computers/Laptop_128x128.png;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="840" y="330" width="95" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="localPcLabel" value="Computador local&#xa;Comunicador" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="817" y="425" width="140" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="usbReaderIcon" value="" style="sketch=0;html=1;pointerEvents=1;dashed=0;fillColor=#036897;strokeColor=#ffffff;strokeWidth=2;verticalLabelPosition=bottom;verticalAlign=top;align=center;outlineConnect=0;shape=mxgraph.cisco.computers_and_peripherals.scanner;" vertex="1" parent="1">
+          <mxGeometry x="995" y="330" width="90" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="usbReaderLabel" value="Leitor RFID USB&#xa;curto alcance" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="970" y="425" width="140" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="tagCard" value="TAG" style="shape=card;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="930" y="510" width="58" height="38" as="geometry"/>
+        </mxCell>
+        <mxCell id="assetIcon" value="" style="shape=image;html=1;image=img/lib/clip_art/computers/Printer_128x128.png;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1025" y="490" width="75" height="75" as="geometry"/>
+        </mxCell>
+        <mxCell id="assetLabel" value="Item patrimonial" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1005" y="565" width="115" height="25" as="geometry"/>
+        </mxCell>
+
+        <!-- Ambientes -->
+        <mxCell id="labIcon" value="" style="shape=image;html=1;image=img/lib/clip_art/computers/Workstation_128x128.png;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="95" y="600" width="70" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="labLabel" value="Laboratorio" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="175" y="615" width="135" height="42" as="geometry"/>
+        </mxCell>
+        <mxCell id="officeIcon" value="" style="shape=image;html=1;image=img/lib/clip_art/computers/Monitor_Tower_128x128.png;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="455" y="565" width="75" height="75" as="geometry"/>
+        </mxCell>
+        <mxCell id="officeLabel" value="Sala administrativa" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="535" y="580" width="150" height="42" as="geometry"/>
+        </mxCell>
+        <mxCell id="stockIcon" value="" style="shape=image;html=1;image=img/lib/clip_art/general/Full_Folder_128x128.png;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="860" y="600" width="75" height="75" as="geometry"/>
+        </mxCell>
+        <mxCell id="stockLabel" value="Almoxarifado" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="940" y="615" width="135" height="42" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="legend" value="Legenda: verde = fluxo validado com leitor USB de proximidade e comunicador intermediario; laranja = fluxo previsto para sensores e antenas conectadas; azul = sistema web, API/middleware e banco de dados." style="rounded=1;whiteSpace=wrap;html=1;align=left;spacing=8;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="115" y="725" width="940" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Conexoes -->
+        <mxCell id="eAdmin" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="adminPc" target="serverIcon">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eUser" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="userPc" target="serverIcon">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eServerApi" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#6c8ebf;" edge="1" parent="1" source="serverIcon" target="apiBox">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eMwApi" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#6c8ebf;" edge="1" parent="1" source="middlewareIcon" target="apiBox">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eDbApi" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#6c8ebf;" edge="1" parent="1" source="dbIcon" target="apiBox">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eApiRouter" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="apiBox" target="routerIcon">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eSensorApi" value="motion_detected" style="endArrow=block;html=1;rounded=0;dashed=1;strokeColor=#d79b00;fontSize=10;" edge="1" parent="1" source="sensorIcon" target="apiBox">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eReaderApi" value="tags_read" style="endArrow=block;html=1;rounded=0;strokeColor=#d79b00;fontSize=10;" edge="1" parent="1" source="readerNetIcon" target="apiBox">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eAntLab" value="" style="endArrow=block;html=1;rounded=0;dashed=1;strokeColor=#d79b00;" edge="1" parent="1" source="antennaA2" target="labLabel">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ePcApi" value="HTTP" style="endArrow=block;html=1;rounded=0;strokeColor=#82b366;fontSize=10;" edge="1" parent="1" source="localPcIcon" target="apiBox">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eUsbPc" value="UID" style="endArrow=block;html=1;rounded=0;strokeColor=#82b366;fontSize=10;" edge="1" parent="1" source="usbReaderIcon" target="localPcIcon">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eTagUsb" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#82b366;" edge="1" parent="1" source="tagCard" target="usbReaderIcon">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eAssetTag" value="" style="endArrow=block;html=1;rounded=0;strokeColor=#82b366;" edge="1" parent="1" source="assetIcon" target="tagCard">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eAssetStock" value="" style="endArrow=block;html=1;rounded=0;dashed=1;strokeColor=#82b366;" edge="1" parent="1" source="assetIcon" target="stockLabel">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="eRouterOffice" value="inventario / auditoria / logs" style="endArrow=block;html=1;rounded=0;strokeColor=#666666;fontSize=10;" edge="1" parent="1" source="routerIcon" target="officeLabel">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

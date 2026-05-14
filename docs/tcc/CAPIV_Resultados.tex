@@ -7,7 +7,11 @@ O protótipo implementado consiste em uma aplicação web para gerenciamento de 
 
 A implementação foi organizada de forma modular. O frontend concentra as telas de interação com o usuário, incluindo painel inicial, configurações, patrimônio, leitores RFID, auditoria, inconsistências e log operacional. O backend disponibiliza uma API REST responsável por persistência, validação e aplicação das regras de negócio. Na validação com o leitor de proximidade, utilizou-se um adaptador intermediário de integração capaz de capturar a tag lida pelo dispositivo e encaminhar o evento ao sistema.
 
-Esse adaptador foi necessário porque o leitor empregado opera como dispositivo de entrada local e não possui comunicação HTTP nativa. Assim, sua utilização decorre de uma limitação de interface do equipamento disponível para o experimento, e não de uma restrição da API proposta. Essa organização permite que o leitor utilizado na validação seja substituído futuramente por outros dispositivos de captura. A condição para essa substituição é que o novo dispositivo, ou um gateway associado a ele, envie à API REST eventos compatíveis com o formato esperado. Portanto, embora a validação tenha sido realizada com leitor RFID de proximidade de baixo custo, a arquitetura não fica restrita a esse equipamento.
+Esse adaptador foi necessário porque o leitor empregado opera como dispositivo de entrada local e não possui comunicação HTTP nativa. Assim, sua utilização decorre de uma limitação de interface do equipamento disponível para o experimento, e não de uma restrição da API proposta. Além disso, o adaptador funciona como uma camada de compatibilidade para periféricos simples, como leitores USB que operam como teclado ou dispositivos semelhantes a leitores de código de barras. Essa organização permite que o leitor utilizado na validação seja substituído futuramente por outros dispositivos de captura. A condição para essa substituição é que o novo dispositivo, ou um gateway associado a ele, envie à API REST eventos compatíveis com o formato esperado. Portanto, embora a validação tenha sido realizada com leitor RFID de proximidade de baixo custo, a arquitetura não fica restrita a esse equipamento.
+
+A Figura \ref{fig:arquitetura-geral-rfid} apresenta uma visão geral da arquitetura proposta. O sistema web permite que usuários gerenciem itens, locais, leitores e auditorias. A camada de backend/API atua como middleware, recebendo eventos RFID, aplicando regras de negócio e persistindo os dados. Na validação deste trabalho, utilizou-se um leitor RFID USB de curto alcance conectado a um computador intermediário. A arquitetura, entretanto, prevê integração futura com sensores e leitores RFID com comunicação em rede.
+
+\input{figs/arquitetura_geral_rfid.tex}
 
 \section{Cadastro de locais, leitores e itens}
 
@@ -19,7 +23,11 @@ Os itens patrimoniais são cadastrados com tag RFID, nome, local lógico, local 
 
 \section{Fluxo de eventos RFID}
 
-O fluxo principal inicia-se com a ativação de uma janela de leitura. Essa janela representa o intervalo no qual o sistema espera receber eventos de determinado leitor. Em uma implantação escalável, essa ativação poderia ser causada por um sensor infravermelho ou outro sensor de presença, que acionaria a API para habilitar uma antena RFID em determinado ponto. No protótipo validado, a leitura foi realizada por um dispositivo de proximidade, e o adaptador intermediário de integração ficou responsável por converter a tag capturada em requisição HTTP enviada ao backend.
+O fluxo principal inicia-se com a ativação de uma janela de leitura. Essa janela representa o intervalo no qual o sistema espera receber eventos de determinado leitor. Em uma implantação escalável, essa ativação poderia ser causada por um sensor infravermelho ou outro sensor de presença, que enviaria à API um evento de presença para habilitar uma antena RFID em determinado ponto. No protótipo validado, a leitura foi realizada por um dispositivo de proximidade, e o adaptador intermediário de integração ficou responsável por converter a tag capturada em requisição HTTP enviada ao backend.
+
+A Figura \ref{fig:fluxo-eventos-rfid} resume a sequência dos dois fluxos tratados na arquitetura. O primeiro corresponde ao fluxo validado fisicamente com leitor USB de proximidade e comunicador intermediário. O segundo corresponde ao fluxo escalável, no qual um sensor ou gateway envia o evento \textit{motion\_detected}, a API abre a janela de leitura e o leitor conectado envia posteriormente o evento \textit{tags\_read}. Esse segundo fluxo foi verificado por testes funcionais de software, sem validação física de sensor infravermelho real neste trabalho.
+
+\input{figs/fluxo_rfid_sequence.tex}
 
 Ao receber um evento RFID, a API executa etapas de validação e processamento. Inicialmente, verifica a autenticidade da requisição e a existência do leitor. Em seguida, normaliza as tags recebidas, trata leituras duplicadas em curto intervalo e verifica se a leitura ocorreu durante uma janela ativa. Quando a tag corresponde a um item cadastrado, o sistema registra a leitura e atualiza o estado do item conforme o tipo do leitor. Quando a tag não está cadastrada, o sistema pode registrar uma inconsistência de tag desconhecida.
 
@@ -41,33 +49,44 @@ Para documentação do TCC, recomenda-se utilizar capturas de tela do dashboard,
 
 \section{Resultados da validação funcional}
 
-A validação funcional foi realizada em ambiente controlado, utilizando um computador pessoal, um leitor RFID de proximidade de baixo custo e uma única tag RFID. O leitor empregado exige aproximação direta da tag para captura do identificador, diferindo de uma infraestrutura RFID de maior alcance. Assim, os testes tiveram como objetivo verificar o fluxo lógico da aplicação: leitura da tag, captura pelo adaptador intermediário, envio do evento à API REST, processamento pelo backend, persistência dos dados e atualização das informações de inventário. Não foram avaliados alcance, leitura simultânea de múltiplas tags ou desempenho físico de antenas RFID. A Tabela \ref{tab:testes-funcionais} resume os principais cenários de validação previstos para o sistema, organizados a partir da relação entre procedimento executado, resultado esperado e resultado observado, conforme práticas de documentação de testes de software \cite{iso29119}.
+A validação funcional foi realizada em ambiente controlado, utilizando um computador pessoal, um leitor RFID de proximidade de baixo custo e uma única tag RFID. O leitor empregado exige aproximação direta da tag para captura do identificador, diferindo de uma infraestrutura RFID de maior alcance. Assim, os testes tiveram como objetivo verificar o fluxo lógico da aplicação: leitura da tag, captura pelo adaptador intermediário, envio do evento à API REST, processamento pelo backend, persistência dos dados e atualização das informações de inventário. Não foram avaliados alcance, leitura simultânea de múltiplas tags ou desempenho físico de antenas RFID.
+
+Os resultados foram organizados em três categorias. A primeira corresponde ao fluxo validado fisicamente, envolvendo leitor USB de proximidade, uma tag, comunicador intermediário, envio à API e atualização do sistema. A segunda corresponde à verificação funcional por software, incluindo o evento \textit{motion\_detected}, a abertura de janela de leitura, o retorno do comando \textit{start\_reading} e o processamento de eventos \textit{tags\_read}. A terceira reúne aspectos não validados fisicamente neste trabalho, como sensor infravermelho real, antena de longo alcance, leitura simultânea em massa, alcance, acurácia e interferência. A Tabela \ref{tab:testes-funcionais} resume os principais cenários considerados, organizados a partir da relação entre procedimento executado, resultado esperado e resultado observado, conforme práticas de documentação de testes de software \cite{iso29119}.
 
 \begin{table}[H]
 \centering
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\renewcommand{\arraystretch}{0.92}
 \caption{Cenários de validação funcional do protótipo}
 \label{tab:testes-funcionais}
 \begin{tabular}{|p{3.2cm}|p{4.1cm}|p{4.1cm}|p{2.7cm}|}
 \hline
 \textbf{Cenário} & \textbf{Procedimento} & \textbf{Resultado esperado} & \textbf{Resultado observado} \\
 \hline
-Cadastro básico & Cadastrar local, leitor RFID e item patrimonial com a tag disponível no experimento. & Registros disponíveis para consulta e uso nos fluxos de leitura. & A preencher com evidência do teste. \\
+Cadastro básico & Cadastrar local, leitor RFID e item patrimonial com a tag disponível no experimento. & Registros disponíveis para consulta e uso nos fluxos de leitura. & Validado funcionalmente na aplicação web e pela persistência dos registros. \\
 \hline
-Leitura válida & Ativar janela de leitura e aproximar a tag cadastrada do leitor de proximidade. & Sistema registra a leitura e atualiza o local físico conforme o leitor. & A preencher com evidência do teste. \\
+Leitura válida & Ativar janela de leitura e aproximar a tag cadastrada do leitor de proximidade. & Sistema registra a leitura e atualiza o local físico conforme o leitor. & Validado fisicamente com leitor USB, comunicador intermediário e envio do evento à API. \\
 \hline
-Tag desconhecida & Enviar código de tag não cadastrado, caso o adaptador ou a API sejam utilizados para simulação controlada. & Sistema registra evento e sinaliza inconsistência de tag desconhecida. & Cenário dependente de simulação ou de segunda tag; preencher somente se executado. \\
+Tag desconhecida & Enviar código de tag não cadastrado por simulação controlada na API. & Sistema registra evento e sinaliza inconsistência de tag desconhecida. & Verificado por teste funcional de software; validação física depende de nova tag ou massa de testes ampliada. \\
 \hline
-Local divergente & Associar o item a local lógico diferente do local vinculado ao leitor e aproximar a tag cadastrada. & Sistema identifica divergência entre localização lógica e física. & A preencher com evidência do teste. \\
+Local divergente & Associar o item a local lógico diferente do local vinculado ao leitor e aproximar a tag cadastrada. & Sistema identifica divergência entre localização lógica e física. & Validado funcionalmente pelo processamento da leitura e geração de inconsistência. \\
 \hline
-Duplicidade & Aproximar a mesma tag repetidamente do leitor em curto intervalo. & Sistema ignora ou consolida leituras duplicadas conforme regra de deduplicação. & A preencher com evidência do teste. \\
+Duplicidade & Aproximar a mesma tag repetidamente do leitor em curto intervalo ou repetir o evento pela API. & Sistema ignora ou consolida leituras duplicadas conforme regra de deduplicação. & Verificado pela regra de deduplicação no processamento de leituras. \\
 \hline
-Auditoria & Executar janela de auditoria para um local utilizando a tag disponível no experimento. & Sistema classifica o item lido e permite identificar ausências conforme os itens cadastrados para o local. & Validação parcial com uma tag; preencher com evidência do teste executado. \\
+Auditoria & Executar janela de auditoria para um local utilizando a tag disponível no experimento. & Sistema classifica o item lido e permite identificar ausências conforme os itens cadastrados para o local. & Validado parcialmente com uma tag e verificado por testes funcionais para itens encontrados, ausentes e divergentes. \\
 \hline
-Leitor offline & Interromper o adaptador intermediário, desconectar o leitor ou simular falha de envio de evento. & Sistema bloqueia, sinaliza ou registra falha de comunicação sem comprometer os dados. & A preencher com evidência do teste. \\
+Leitor offline & Interromper o adaptador intermediário, desconectar o leitor ou simular ausência de ping. & Sistema bloqueia, sinaliza ou registra falha de comunicação sem comprometer os dados. & Verificado pelo controle de status do leitor e bloqueio de acionamento quando offline. \\
+\hline
+Acionamento por sensor & Simular evento \textit{motion\_detected} enviado por sensor ou gateway à API. & API abre janela de leitura e disponibiliza comando para a antena. & Verificado por teste funcional de software; sensor físico real não foi validado neste trabalho. \\
 \hline
 \end{tabular}
 \end{table}
+\normalsize
+\renewcommand{\arraystretch}{1}
 
 Como os resultados quantitativos dependem de medições específicas do experimento, não foram assumidos valores de acurácia, alcance, taxa de leitura ou tempo de resposta sem evidência. A validação apresentada deve ser complementada com registros reais, como prints, logs e tabelas de execução. Ainda assim, a implementação demonstra que o fluxo essencial da solução foi contemplado: o sistema cadastra entidades, recebe eventos RFID, processa leituras, atualiza o inventário, gera histórico e identifica inconsistências. Essa forma de avaliação deve ser entendida como validação funcional do protótipo no escopo definido, e não como certificação de desempenho físico da tecnologia RFID em ambiente real de larga escala \cite{ieee1012,knapp2022}.
+
+Como evidência complementar, o backend possui testes automatizados para os principais comportamentos do pipeline RFID. Esses testes cobrem a ativação de antena a partir de evento de movimento, o retorno do comando \textit{start\_reading}, o processamento de \textit{tags\_read}, a atualização de localização física, o registro de timeline, a identificação de tags desconhecidas, a deduplicação e cenários de auditoria. Na execução realizada durante a revisão do trabalho, os 27 testes automatizados do backend foram concluídos com sucesso.
 
 Portanto, o resultado principal do protótipo é a comprovação funcional da arquitetura de software. A validação com computador pessoal, leitor de proximidade e uma tag demonstra que a aplicação é capaz de operar com eventos RFID reais em ambiente controlado, comprovando o fluxo computacional necessário ao inventário com RFID. A evolução para sensores infravermelhos e antenas RFID de maior alcance permanece como continuidade natural da proposta, exigindo novos testes físicos de alcance, taxa de leitura, interferência e leitura simultânea.
