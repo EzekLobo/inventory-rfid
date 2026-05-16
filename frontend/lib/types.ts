@@ -4,6 +4,57 @@ export type Local = {
   codigo: string;
 };
 
+export type PaginatedResponse<T> = {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+};
+
+export type PaginationParams = {
+  page?: number;
+  page_size?: number;
+};
+
+export type OperacionalResumo = {
+  leitores_online: number;
+  leitores_ativos: number;
+  itens_ativos: number;
+  inconsistencias_abertas: number;
+};
+
+export type UserPermissions = {
+  gerenciar_cadastros: boolean;
+  acionar_leitores: boolean;
+  executar_auditoria: boolean;
+  resolver_inconsistencias: boolean;
+  ver_logs: boolean;
+  gerenciar_usuarios: boolean;
+};
+
+export type CurrentUser = {
+  id: number;
+  username: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  is_admin: boolean;
+  perfil: "admin" | "tecnico";
+  permissions: UserPermissions;
+};
+
+export type Usuario = {
+  id: number;
+  username: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  is_active: boolean;
+  is_staff: boolean;
+  is_admin: boolean;
+  perfil: "admin" | "tecnico";
+};
+
 export type Antena = {
   id: number;
   nome: string;
