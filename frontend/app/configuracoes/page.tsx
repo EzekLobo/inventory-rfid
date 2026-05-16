@@ -8,11 +8,22 @@ import { ErrorState, LoadingState } from "@/components/ui/DataState";
 
 type Section = "locais" | "leitores" | "itens";
 type LocalForm = Omit<Local, "id">;
-type AntenaForm = Pick<Antena, "nome" | "hardware_id" | "local_id" | "tipo">;
+type AntenaForm = Pick<Antena, "nome" | "hardware_id" | "local_id" | "tipo" | "modo_comando" | "command_url" | "duracao_padrao_segundos"> & {
+  command_token?: string;
+};
 type ItemForm = Pick<ItemPatrimonial, "nome" | "tag_id" | "local_logico_id" | "local_fisico_id" | "ativo">;
 
 const emptyLocal: LocalForm = { nome: "", codigo: "" };
-const emptyAntena: AntenaForm = { nome: "", hardware_id: "", local_id: 0, tipo: 1 };
+const emptyAntena: AntenaForm = {
+  nome: "",
+  hardware_id: "",
+  local_id: 0,
+  tipo: 1,
+  modo_comando: "polling",
+  command_url: "",
+  command_token: "",
+  duracao_padrao_segundos: 5
+};
 const emptyItem: ItemForm = { nome: "", tag_id: "", local_logico_id: null, local_fisico_id: null, ativo: true };
 
 const sections = [
@@ -122,7 +133,16 @@ export default function ConfiguracoesPage() {
   function editAntena(antena: Antena) {
     setSection("leitores");
     setEditingAntenaId(antena.id);
-    setAntenaForm({ nome: antena.nome, hardware_id: antena.hardware_id, local_id: antena.local_id, tipo: antena.tipo });
+    setAntenaForm({
+      nome: antena.nome,
+      hardware_id: antena.hardware_id,
+      local_id: antena.local_id,
+      tipo: antena.tipo,
+      modo_comando: antena.modo_comando,
+      command_url: antena.command_url,
+      command_token: "",
+      duracao_padrao_segundos: antena.duracao_padrao_segundos
+    });
   }
 
   function editItem(item: ItemPatrimonial) {
@@ -308,6 +328,40 @@ function AntenaEditor(props: {
             { value: 2, label: "Fluxo" }
           ]}
         />
+        <label className="field">
+          <span>Modo de comando</span>
+          <select
+            className="select"
+            value={props.form.modo_comando}
+            onChange={(event) => props.setForm({ ...props.form, modo_comando: event.target.value as Antena["modo_comando"] })}
+          >
+            <option value="polling">Polling</option>
+            <option value="http">HTTP direto</option>
+          </select>
+        </label>
+        <TextField
+          label="URL de comando"
+          required={props.form.modo_comando === "http"}
+          value={props.form.command_url}
+          onChange={(command_url) => props.setForm({ ...props.form, command_url })}
+        />
+        <TextField
+          label="Token de comando"
+          required={false}
+          value={props.form.command_token || ""}
+          onChange={(command_token) => props.setForm({ ...props.form, command_token })}
+        />
+        <label className="field">
+          <span>DuraÃ§Ã£o padrÃ£o (s)</span>
+          <input
+            className="input"
+            min={1}
+            required
+            type="number"
+            value={props.form.duracao_padrao_segundos}
+            onChange={(event) => props.setForm({ ...props.form, duracao_padrao_segundos: Number(event.target.value) || 1 })}
+          />
+        </label>
         <FormActions busy={props.busy || !props.form.local_id} editing={Boolean(props.editingId)} onCancel={props.onCancel} />
       </form>
       <RecordList
@@ -315,8 +369,8 @@ function AntenaEditor(props: {
         items={props.antenas.map((antena) => ({
           id: antena.id,
           title: antena.nome,
-          meta: `${antena.hardware_id} · ${props.localNameById.get(antena.local_id) || antena.local_nome}`,
-          badge: antena.tipo_display,
+          meta: `${antena.hardware_id} · ${props.localNameById.get(antena.local_id) || antena.local_nome} · ${antena.modo_comando_display}`,
+          badge: antena.command_token_configurado ? `${antena.tipo_display} / token` : antena.tipo_display,
           onEdit: () => props.onEdit(antena),
           onDelete: () => props.onDelete(antena.id)
         }))}
@@ -394,11 +448,21 @@ function EditorHeader({ title, editing }: { title: string; editing: boolean }) {
   );
 }
 
-function TextField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function TextField({
+  label,
+  required = true,
+  value,
+  onChange
+}: {
+  label: string;
+  required?: boolean;
+  value: string;
+  onChange: (value: string) => void;
+}) {
   return (
     <label className="field">
       <span>{label}</span>
-      <input className="input" required value={value} onChange={(event) => onChange(event.target.value)} />
+      <input className="input" required={required} value={value} onChange={(event) => onChange(event.target.value)} />
     </label>
   );
 }

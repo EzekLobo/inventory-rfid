@@ -26,12 +26,13 @@ class AntenaRFIDAdmin(admin.ModelAdmin):
         "hardware_id",
         "local",
         "tipo",
+        "modo_comando",
         "ativa",
         "online",
         "ultimo_ping",
         "ultimo_acionamento",
     )
-    list_filter = ("tipo", "ativa", "online", "local")
+    list_filter = ("tipo", "modo_comando", "ativa", "online", "local")
     search_fields = ("nome", "hardware_id", "local__nome", "local__codigo")
 
 

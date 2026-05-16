@@ -13,6 +13,11 @@ export type Antena = {
   local_codigo: string;
   tipo: number;
   tipo_display: string;
+  modo_comando: "polling" | "http";
+  modo_comando_display: string;
+  command_url: string;
+  command_token_configurado: boolean;
+  duracao_padrao_segundos: number;
   ativa: boolean;
   ativacao_expira_em: string | null;
   ultimo_acionamento: string | null;

@@ -142,6 +142,9 @@ class AntenaRFIDListSerializer(serializers.ModelSerializer):
     local_codigo = serializers.CharField(source="local.codigo", read_only=True)
     tipo_display = serializers.CharField(source="get_tipo_display", read_only=True)
 
+    modo_comando_display = serializers.CharField(source="get_modo_comando_display", read_only=True)
+    command_token = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    command_token_configurado = serializers.SerializerMethodField()
     class Meta:
         model = AntenaRFID
         fields = [
@@ -153,12 +156,36 @@ class AntenaRFIDListSerializer(serializers.ModelSerializer):
             "local_codigo",
             "tipo",
             "tipo_display",
+            "modo_comando",
+            "modo_comando_display",
+            "command_url",
+            "command_token",
+            "command_token_configurado",
+            "duracao_padrao_segundos",
             "ativa",
             "ativacao_expira_em",
             "ultimo_acionamento",
             "ultimo_ping",
             "online",
         ]
+
+    def get_command_token_configurado(self, obj):
+        return bool(obj.command_token)
+
+    def validate(self, attrs):
+        modo_comando = attrs.get("modo_comando", getattr(self.instance, "modo_comando", AntenaRFID.ModoComando.POLLING))
+        command_url = attrs.get("command_url", getattr(self.instance, "command_url", ""))
+        if modo_comando == AntenaRFID.ModoComando.HTTP and not command_url:
+            raise serializers.ValidationError({"command_url": "Informe a URL de comando para antenas em modo HTTP."})
+        return attrs
+
+    def update(self, instance, validated_data):
+        command_token = validated_data.pop("command_token", None)
+        instance = super().update(instance, validated_data)
+        if command_token:
+            instance.command_token = command_token
+            instance.save(update_fields=["command_token"])
+        return instance
 
 
 class AuditoriaLeitorStatusSerializer(serializers.ModelSerializer):

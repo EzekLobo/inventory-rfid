@@ -4,6 +4,7 @@ from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta
 from rest_framework.test import APIClient
+from unittest.mock import patch
 
 from core.domain.models import (
     AntenaRFID,
@@ -14,6 +15,16 @@ from core.domain.models import (
     TimelineEvento,
 )
 from core.middleware.rfid_handler import RFIDEventProcessor, SensorVirtual
+
+
+class FakeHttpResponse:
+    status = 200
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, traceback):
+        return False
 
 
 class SensorVirtualTests(TestCase):
@@ -439,6 +450,7 @@ class PipelineAndApiTests(TestCase):
         list_response = self.client.get("/api/antenas/")
         self.assertEqual(list_response.status_code, 200)
         self.assertEqual(list_response.data[0]["id"], self.destino_antenna.id)
+        self.assertEqual(list_response.data[0]["modo_comando"], AntenaRFID.ModoComando.POLLING)
 
         activate_response = self.client.post(
             f"/api/antenas/{self.destino_antenna.id}/ativar/",
@@ -449,6 +461,104 @@ class PipelineAndApiTests(TestCase):
         self.assertEqual(activate_response.data["status"], "sincronizacao_iniciada")
         self.destino_antenna.refresh_from_db()
         self.assertTrue(self.destino_antenna.ativa)
+
+    def test_antenas_endpoint_accepts_http_command_configuration(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(
+            "/api/antenas/",
+            {
+                "nome": "Porta Lab",
+                "hardware_id": "HTTP-001",
+                "local_id": self.lab4.id,
+                "tipo": AntenaRFID.TipoAntena.DESTINO,
+                "modo_comando": AntenaRFID.ModoComando.HTTP,
+                "command_url": "http://192.168.0.50/read",
+                "command_token": "secret-token",
+                "duracao_padrao_segundos": 9,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["modo_comando"], AntenaRFID.ModoComando.HTTP)
+        self.assertEqual(response.data["command_url"], "http://192.168.0.50/read")
+        self.assertTrue(response.data["command_token_configurado"])
+        self.assertNotIn("command_token", response.data)
+
+        antenna = AntenaRFID.objects.get(hardware_id="HTTP-001")
+        self.assertEqual(antenna.command_token, "secret-token")
+
+    def test_http_command_mode_requires_command_url(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(
+            "/api/antenas/",
+            {
+                "nome": "Sem URL",
+                "hardware_id": "HTTP-SEM-URL",
+                "local_id": self.lab4.id,
+                "tipo": AntenaRFID.TipoAntena.DESTINO,
+                "modo_comando": AntenaRFID.ModoComando.HTTP,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("command_url", response.data)
+
+    @patch("core.middleware.rfid_handler.request.urlopen")
+    def test_motion_detected_sends_direct_http_command_for_http_antenna(self, urlopen):
+        urlopen.return_value = FakeHttpResponse()
+        self.destino_antenna.modo_comando = AntenaRFID.ModoComando.HTTP
+        self.destino_antenna.command_url = "http://192.168.0.50/read"
+        self.destino_antenna.command_token = "antenna-secret"
+        self.destino_antenna.duracao_padrao_segundos = 8
+        self.destino_antenna.save(
+            update_fields=["modo_comando", "command_url", "command_token", "duracao_padrao_segundos"]
+        )
+
+        response = self.client.post(
+            "/api/eventos/rfid/",
+            {"event_type": "motion_detected", "antenna_id": self.destino_antenna.id},
+            format="json",
+            **self._rfid_headers(),
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["command_delivery"], "sent")
+        self.assertEqual(response.data["command_status_code"], 200)
+        self.assertEqual(response.data["command"]["active_for_seconds"], 8)
+        http_request = urlopen.call_args.args[0]
+        self.assertEqual(http_request.full_url, "http://192.168.0.50/read")
+        self.assertEqual(http_request.headers["X-antenna-command-token"], "antenna-secret")
+        self.assertIn(b'"command": "start_reading"', http_request.data)
+        self.destino_antenna.refresh_from_db()
+        self.assertTrue(self.destino_antenna.ativa)
+
+    @patch("core.middleware.rfid_handler.request.urlopen")
+    def test_motion_detected_reports_direct_http_command_failure_and_keeps_window(self, urlopen):
+        urlopen.side_effect = OSError("connection refused")
+        self.destino_antenna.modo_comando = AntenaRFID.ModoComando.HTTP
+        self.destino_antenna.command_url = "http://192.168.0.50/read"
+        self.destino_antenna.save(update_fields=["modo_comando", "command_url"])
+
+        response = self.client.post(
+            "/api/eventos/rfid/",
+            {"event_type": "motion_detected", "antenna_id": self.destino_antenna.id},
+            format="json",
+            **self._rfid_headers(),
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["command_delivery"], "failed")
+        self.destino_antenna.refresh_from_db()
+        self.assertTrue(self.destino_antenna.ativa)
+        self.assertTrue(
+            TimelineEvento.objects.filter(
+                tipo=TimelineEvento.TipoEvento.SISTEMA,
+                metadados__evento="command_delivery_failed",
+                metadados__antenna_id=self.destino_antenna.id,
+            ).exists()
+        )
 
     def test_antenas_endpoint_marks_stale_reader_offline_and_blocks_actions(self):
         self.destino_antenna.online = True

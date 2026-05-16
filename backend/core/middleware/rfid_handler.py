@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import timedelta
+import json
+from urllib import error, request
 
 from django.utils import timezone
 from django.conf import settings
@@ -15,6 +17,49 @@ class ActivationCommand:
     hardware_id: str
     active_for_seconds: int
     expires_at: str
+
+
+class AntennaCommandService:
+    def send_start_reading(self, *, antenna: AntenaRFID, command: ActivationCommand) -> dict:
+        if antenna.modo_comando != AntenaRFID.ModoComando.HTTP:
+            return {"command_delivery": "available_for_polling"}
+
+        payload = {
+            "command": "start_reading",
+            "antenna_id": antenna.id,
+            "hardware_id": command.hardware_id,
+            "active_for_seconds": command.active_for_seconds,
+            "expires_at": command.expires_at,
+        }
+        body = json.dumps(payload).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+        if antenna.command_token:
+            headers["X-Antenna-Command-Token"] = antenna.command_token
+
+        timeout = getattr(settings, "RFID_COMMAND_TIMEOUT_SECONDS", 3)
+        try:
+            http_request = request.Request(
+                antenna.command_url,
+                data=body,
+                headers=headers,
+                method="POST",
+            )
+            with request.urlopen(http_request, timeout=timeout) as response:
+                return {
+                    "command_delivery": "sent",
+                    "command_status_code": response.status,
+                }
+        except error.HTTPError as exc:
+            return {
+                "command_delivery": "failed",
+                "command_status_code": exc.code,
+                "command_error": str(exc.reason),
+            }
+        except (error.URLError, TimeoutError, OSError) as exc:
+            return {
+                "command_delivery": "failed",
+                "command_error": str(exc),
+            }
 
 
 class SensorVirtual:
@@ -97,6 +142,7 @@ class RFIDEventProcessor:
         self.classifier = TopologyClassifier(sync_manager=self.sync_manager)
         self.auditoria_manager = AuditoriaManager()
         self.auditoria_reconciliacao_manager = AuditoriaReconciliacaoManager()
+        self.command_service = AntennaCommandService()
 
     def process_ping(self, *, antenna: AntenaRFID) -> dict:
         now = timezone.now()
@@ -106,10 +152,28 @@ class RFIDEventProcessor:
         return {"status": "ok", "event": "ping", "antenna_id": antenna.id}
 
     def process_motion_detected(self, *, antenna: AntenaRFID) -> dict:
-        sensor = SensorVirtual(hardware_id=antenna.hardware_id)
+        sensor = SensorVirtual(
+            hardware_id=antenna.hardware_id,
+            antenna_timeout_seconds=antenna.duracao_padrao_segundos,
+        )
         command = sensor.on_motion_detected(antenna=antenna)
         antenna.ativacao_expira_em = timezone.now() + timedelta(seconds=command.active_for_seconds)
         antenna.save(update_fields=["ativacao_expira_em"])
+        delivery = self.command_service.send_start_reading(antenna=antenna, command=command)
+        if delivery.get("command_delivery") == "failed":
+            TimelineEvento.objects.create(
+                item=None,
+                tipo=TimelineEvento.TipoEvento.SISTEMA,
+                mensagem=f"Falha ao enviar comando direto para antena {antenna.nome}.",
+                usuario=None,
+                metadados={
+                    "evento": "command_delivery_failed",
+                    "antenna_id": antenna.id,
+                    "hardware_id": antenna.hardware_id,
+                    "command_url": antenna.command_url,
+                    **delivery,
+                },
+            )
         return {
             "status": "ok",
             "event": "motion_detected",
@@ -118,6 +182,7 @@ class RFIDEventProcessor:
                 "active_for_seconds": command.active_for_seconds,
                 "expires_at": command.expires_at,
             },
+            **delivery,
         }
 
     def process_tags_read(self, *, antenna: AntenaRFID, tags: list[str], payload: dict | None = None) -> dict:

@@ -102,11 +102,11 @@ export const api = {
     return request<Antena[]>("/antenas/");
   },
 
-  createAntena(payload: Pick<Antena, "nome" | "hardware_id" | "local_id" | "tipo">) {
+  createAntena(payload: Pick<Antena, "nome" | "hardware_id" | "local_id" | "tipo" | "modo_comando" | "command_url" | "duracao_padrao_segundos"> & { command_token?: string }) {
     return request<Antena>("/antenas/", { method: "POST", body: JSON.stringify(payload) });
   },
 
-  updateAntena(id: number, payload: Pick<Antena, "nome" | "hardware_id" | "local_id" | "tipo">) {
+  updateAntena(id: number, payload: Pick<Antena, "nome" | "hardware_id" | "local_id" | "tipo" | "modo_comando" | "command_url" | "duracao_padrao_segundos"> & { command_token?: string }) {
     return request<Antena>(`/antenas/${id}/`, { method: "PUT", body: JSON.stringify(payload) });
   },
 

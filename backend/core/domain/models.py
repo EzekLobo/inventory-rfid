@@ -15,10 +15,18 @@ class AntenaRFID(models.Model):
         DESTINO = 1, "Destino"
         FLUXO = 2, "Fluxo"
 
+    class ModoComando(models.TextChoices):
+        POLLING = "polling", "Polling"
+        HTTP = "http", "HTTP direto"
+
     nome = models.CharField(max_length=120)
     hardware_id = models.CharField(max_length=100, unique=True)
     local = models.ForeignKey(Local, on_delete=models.PROTECT, related_name="antenas")
     tipo = models.IntegerField(choices=TipoAntena.choices)
+    modo_comando = models.CharField(max_length=20, choices=ModoComando.choices, default=ModoComando.POLLING)
+    command_url = models.URLField(max_length=500, blank=True)
+    command_token = models.CharField(max_length=255, blank=True)
+    duracao_padrao_segundos = models.PositiveIntegerField(default=5)
     ativa = models.BooleanField(default=False)
     ultimo_acionamento = models.DateTimeField(null=True, blank=True)
     ativacao_expira_em = models.DateTimeField(null=True, blank=True)
