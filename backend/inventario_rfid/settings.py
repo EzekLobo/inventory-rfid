@@ -100,6 +100,8 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
     ],
+    "DEFAULT_PAGINATION_CLASS": "core.api.pagination.StandardResultsSetPagination",
+    "PAGE_SIZE": 25,
 }
 
 RFID_INGEST_TOKEN = os.getenv("RFID_INGEST_TOKEN", "dev-rfid-token")
