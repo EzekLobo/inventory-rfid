@@ -193,3 +193,21 @@ class AuditoriaLeitorStatus(models.Model):
     antena = models.ForeignKey(AntenaRFID, on_delete=models.CASCADE, related_name="auditorias")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ENERGIZADO)
     atualizado_em = models.DateTimeField(auto_now=True)
+
+
+class TecnicoPermissoes(models.Model):
+    gerenciar_cadastros = models.BooleanField(default=False)
+    acionar_leitores = models.BooleanField(default=True)
+    executar_auditoria = models.BooleanField(default=True)
+    resolver_inconsistencias = models.BooleanField(default=True)
+    ver_logs = models.BooleanField(default=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Permissoes do tecnico"
+        verbose_name_plural = "Permissoes do tecnico"
+
+    @classmethod
+    def atual(cls):
+        instance, _ = cls.objects.get_or_create(id=1)
+        return instance
