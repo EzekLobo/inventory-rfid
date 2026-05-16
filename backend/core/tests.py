@@ -664,6 +664,77 @@ class PipelineAndApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
 
+    def test_inconsistencias_endpoint_exposes_audit_group_context_from_job(self):
+        NotificacaoInconsistencia.objects.create(
+            item=self.item,
+            tipo=NotificacaoInconsistencia.TipoInconsistencia.NAO_ENCONTRADO,
+            tag_id=self.item.tag_id,
+            local_logico=self.lab4,
+            local_fisico=self.lab4,
+            resolvida=False,
+            metadados={
+                "audit": True,
+                "auditoria_job_id": 42,
+                "auditoria_criada_em": "2026-05-16T10:30:00+00:00",
+                "local_nome": "Lab 4A",
+                "antenna_id": self.destino_antenna.id,
+                "antenna_nome": self.destino_antenna.nome,
+                "evento": "item_nao_encontrado",
+            },
+        )
+
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get("/api/inconsistencias/?resolvida=false")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data[0]["auditoria_id"], "job-42")
+        self.assertIn("Auditoria #42", response.data[0]["auditoria_label"])
+        self.assertEqual(response.data[0]["auditoria_local_nome"], "Lab 4A")
+        self.assertEqual(response.data[0]["auditoria_antenna_id"], self.destino_antenna.id)
+        self.assertEqual(response.data[0]["auditoria_criada_em"], "2026-05-16T10:30:00+00:00")
+
+    def test_inconsistencias_endpoint_groups_manual_audit_without_job(self):
+        NotificacaoInconsistencia.objects.create(
+            item=None,
+            tipo=NotificacaoInconsistencia.TipoInconsistencia.TAG_DESCONHECIDA,
+            tag_id="TAG-AUDIT-MANUAL",
+            local_fisico=self.lab4,
+            resolvida=False,
+            metadados={
+                "audit": True,
+                "auditoria_execucao_id": "manual-1-20260516103000000000",
+                "local_nome": "Lab 4A",
+                "antenna_id": self.destino_antenna.id,
+                "evento": "tag_desconhecida",
+            },
+        )
+
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get("/api/inconsistencias/?resolvida=false")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data[0]["auditoria_id"], "manual-1-20260516103000000000")
+        self.assertIn("Auditoria manual", response.data[0]["auditoria_label"])
+        self.assertEqual(response.data[0]["auditoria_local_nome"], "Lab 4A")
+
+    def test_inconsistencias_endpoint_marks_operational_inconsistency_without_audit(self):
+        NotificacaoInconsistencia.objects.create(
+            item=self.item,
+            tipo=NotificacaoInconsistencia.TipoInconsistencia.LOCAL_DIVERGENTE,
+            tag_id=self.item.tag_id,
+            local_logico=self.lab1,
+            local_fisico=self.lab4,
+            resolvida=False,
+            metadados={"evento": "local_divergente"},
+        )
+
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get("/api/inconsistencias/?resolvida=false")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.data[0]["auditoria_id"])
+        self.assertEqual(response.data[0]["auditoria_label"], "Sem auditoria / fluxo operacional")
+
     def test_confirmar_local_updates_logical_location_and_timeline(self):
         inconsistencia = NotificacaoInconsistencia.objects.create(
             item=self.item,

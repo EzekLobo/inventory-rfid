@@ -53,6 +53,11 @@ export type Inconsistencia = {
   local_fisico_nome: string | null;
   resolvida: boolean;
   metadados: Record<string, unknown>;
+  auditoria_id: string | null;
+  auditoria_label: string;
+  auditoria_local_nome: string | null;
+  auditoria_antenna_id: number | null;
+  auditoria_criada_em: string;
   criado_em: string;
   resolvida_em: string | null;
 };

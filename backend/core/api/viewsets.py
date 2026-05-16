@@ -116,6 +116,11 @@ class InconsistenciaListSerializer(serializers.ModelSerializer):
     item_nome = serializers.CharField(source="item.nome", read_only=True)
     local_logico_nome = serializers.CharField(source="local_logico.nome", read_only=True)
     local_fisico_nome = serializers.CharField(source="local_fisico.nome", read_only=True)
+    auditoria_id = serializers.SerializerMethodField()
+    auditoria_label = serializers.SerializerMethodField()
+    auditoria_local_nome = serializers.SerializerMethodField()
+    auditoria_antenna_id = serializers.SerializerMethodField()
+    auditoria_criada_em = serializers.SerializerMethodField()
 
     class Meta:
         model = NotificacaoInconsistencia
@@ -131,9 +136,74 @@ class InconsistenciaListSerializer(serializers.ModelSerializer):
             "local_fisico_nome",
             "resolvida",
             "metadados",
+            "auditoria_id",
+            "auditoria_label",
+            "auditoria_local_nome",
+            "auditoria_antenna_id",
+            "auditoria_criada_em",
             "criado_em",
             "resolvida_em",
         ]
+
+    def _audit_metadata(self, obj):
+        metadados = obj.metadados or {}
+        auditoria_job_id = metadados.get("auditoria_job_id")
+        auditoria_execucao_id = metadados.get("auditoria_execucao_id")
+        audit_eventos = {"item_nao_encontrado", "item_fora_do_local_auditado", "tag_desconhecida"}
+        is_audit = bool(metadados.get("audit") or auditoria_job_id or auditoria_execucao_id or metadados.get("evento") in audit_eventos)
+        if not is_audit:
+            return None
+
+        if auditoria_job_id:
+            auditoria_id = f"job-{auditoria_job_id}"
+            label = f"Auditoria #{auditoria_job_id}"
+        elif auditoria_execucao_id:
+            auditoria_id = str(auditoria_execucao_id)
+            label = "Auditoria manual"
+        else:
+            antenna_id = metadados.get("antenna_id") or "sem-antena"
+            created_key = obj.criado_em.strftime("%Y%m%d%H%M") if obj.criado_em else "sem-data"
+            auditoria_id = f"manual-{antenna_id}-{created_key}"
+            label = "Auditoria manual"
+
+        local_nome = (
+            metadados.get("local_nome")
+            or (obj.local_fisico.nome if obj.local_fisico else None)
+            or (obj.local_logico.nome if obj.local_logico else None)
+        )
+        antenna_nome = metadados.get("antenna_nome")
+        if local_nome:
+            label = f"{label} - {local_nome}"
+        if antenna_nome:
+            label = f"{label} / {antenna_nome}"
+
+        return {
+            "id": auditoria_id,
+            "label": label,
+            "local_nome": local_nome,
+            "antenna_id": metadados.get("antenna_id"),
+            "criada_em": metadados.get("auditoria_criada_em") or obj.criado_em.isoformat(),
+        }
+
+    def get_auditoria_id(self, obj):
+        audit = self._audit_metadata(obj)
+        return audit["id"] if audit else None
+
+    def get_auditoria_label(self, obj):
+        audit = self._audit_metadata(obj)
+        return audit["label"] if audit else "Sem auditoria / fluxo operacional"
+
+    def get_auditoria_local_nome(self, obj):
+        audit = self._audit_metadata(obj)
+        return audit["local_nome"] if audit else None
+
+    def get_auditoria_antenna_id(self, obj):
+        audit = self._audit_metadata(obj)
+        return audit["antenna_id"] if audit else None
+
+    def get_auditoria_criada_em(self, obj):
+        audit = self._audit_metadata(obj)
+        return audit["criada_em"] if audit else obj.criado_em.isoformat()
 
 
 class AntenaRFIDListSerializer(serializers.ModelSerializer):
@@ -141,10 +211,10 @@ class AntenaRFIDListSerializer(serializers.ModelSerializer):
     local_nome = serializers.CharField(source="local.nome", read_only=True)
     local_codigo = serializers.CharField(source="local.codigo", read_only=True)
     tipo_display = serializers.CharField(source="get_tipo_display", read_only=True)
-
     modo_comando_display = serializers.CharField(source="get_modo_comando_display", read_only=True)
     command_token = serializers.CharField(required=False, allow_blank=True, write_only=True)
     command_token_configurado = serializers.SerializerMethodField()
+
     class Meta:
         model = AntenaRFID
         fields = [

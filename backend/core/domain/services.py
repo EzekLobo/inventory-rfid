@@ -479,7 +479,16 @@ class AuditoriaReconciliacaoManager:
                 "tags_desconhecidas": 0,
             }
 
-        payload = payload or {}
+        audit_started_at = timezone.now()
+        payload = {
+            "audit": True,
+            "auditoria_execucao_id": (payload or {}).get("auditoria_execucao_id")
+            or (f"job-{(payload or {}).get('auditoria_job_id')}" if (payload or {}).get("auditoria_job_id") else f"manual-{antenna.id}-{audit_started_at.strftime('%Y%m%d%H%M%S%f')}"),
+            "auditoria_criada_em": (payload or {}).get("auditoria_criada_em") or audit_started_at.isoformat(),
+            "local_nome": antenna.local.nome,
+            "antenna_nome": antenna.nome,
+            **(payload or {}),
+        }
         raw_tag_set = set(raw_tags)
         valid_tag_set = set(valid_tags)
         unknown_tags = sorted(raw_tag_set - valid_tag_set)
