@@ -3,8 +3,9 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, Filter, RefreshCw, Search } from "lucide-react";
 import { api } from "@/lib/api";
-import type { Antena, Local, TimelineEvento } from "@/lib/types";
+import type { Antena, Local, PaginatedResponse, TimelineEvento } from "@/lib/types";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/DataState";
+import { PaginationControls } from "@/components/ui/PaginationControls";
 
 type LogFilters = {
   search: string;
@@ -37,14 +38,18 @@ const tipoOptions = [
 
 export default function LogPage() {
   const [data, setData] = useState<TimelineEvento[]>([]);
+  const [pageData, setPageData] = useState<PaginatedResponse<TimelineEvento> | null>(null);
   const [locais, setLocais] = useState<Local[]>([]);
   const [antenas, setAntenas] = useState<Antena[]>([]);
   const [filters, setFilters] = useState<LogFilters>(emptyFilters);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  async function load(nextFilters = filters) {
-    setLoading(true);
+  const pageSize = 25;
+
+  async function load(nextFilters = filters, nextPage = page) {
+    if (data.length === 0) setLoading(true);
     setError("");
     const validationError = validateDateFilters(nextFilters);
     if (validationError) {
@@ -62,14 +67,18 @@ export default function LogPage() {
           data_fim: toApiDate(nextFilters.data_fim),
           local_id: nextFilters.local_id ? Number(nextFilters.local_id) : undefined,
           antenna_id: nextFilters.antenna_id ? Number(nextFilters.antenna_id) : undefined,
-          me: nextFilters.me || undefined
+          me: nextFilters.me || undefined,
+          page: nextPage,
+          page_size: pageSize
         }),
-        api.listLocais(),
-        api.listAntenas()
+        api.listLocais({ page_size: 100 }),
+        api.listAntenas({ page_size: 100 })
       ]);
-      setData(timelineData);
-      setLocais(locaisData);
-      setAntenas(antenasData);
+      setData(timelineData.results);
+      setPageData(timelineData);
+      setLocais(locaisData.results);
+      setAntenas(antenasData.results);
+      setPage(nextPage);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível carregar o log.");
     } finally {
@@ -78,7 +87,7 @@ export default function LogPage() {
   }
 
   useEffect(() => {
-    load(emptyFilters);
+    load(emptyFilters, 1);
   }, []);
 
   const activeFilters = useMemo(
@@ -92,12 +101,12 @@ export default function LogPage() {
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    load(filters);
+    load(filters, 1);
   }
 
   function resetFilters() {
     setFilters(emptyFilters);
-    load(emptyFilters);
+    load(emptyFilters, 1);
   }
 
   return (
@@ -182,15 +191,14 @@ export default function LogPage() {
           </label>
 
           <div className="log-actions">
-            <button className="button log-action-button" type="submit">
-              <Search size={17} />
-              Filtrar
-            </button>
             <button className="button ghost log-action-button" type="button" onClick={resetFilters}>
               <Filter size={17} />
               Limpar
             </button>
-            <span className="badge">{activeFilters} filtro(s)</span>
+            <button className="button log-action-button" type="submit">
+              <Search size={17} />
+              Filtros: {activeFilters}
+            </button>
           </div>
         </form>
 
@@ -231,6 +239,7 @@ export default function LogPage() {
             </table>
           </div>
         ) : null}
+        {!loading && !error && pageData ? <PaginationControls data={pageData} page={page} pageSize={pageSize} onPageChange={(nextPage) => load(filters, nextPage)} /> : null}
       </article>
     </section>
   );

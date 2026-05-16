@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Play, Radar, RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
-import type { AcionamentoResponse, Antena } from "@/lib/types";
+import type { AcionamentoResponse, Antena, CurrentUser } from "@/lib/types";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/DataState";
 
 type ActiveProcess = {
@@ -20,6 +20,7 @@ function commandLabel(command: AcionamentoResponse) {
 
 export default function AntenasPage() {
   const [antenas, setAntenas] = useState<Antena[]>([]);
+  const [currentUser] = useState<CurrentUser | null>(() => api.currentUser());
   const [duracao, setDuracao] = useState(5);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -33,7 +34,8 @@ export default function AntenasPage() {
     setLoading(true);
     setError("");
     try {
-      setAntenas(await api.listAntenas());
+      const response = await api.listAntenas({ page_size: 100 });
+      setAntenas(response.results);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível carregar leitores.");
     } finally {
@@ -87,6 +89,8 @@ export default function AntenasPage() {
     ? Math.min(100, Math.max(0, ((now - activeProcess.startedAt) / (activeProcess.expiresAt - activeProcess.startedAt)) * 100))
     : 0;
   const remainingSeconds = activeProcess ? Math.max(0, Math.ceil((activeProcess.expiresAt - now) / 1000)) : 0;
+  const canSync = Boolean(currentUser?.permissions.acionar_leitores);
+  const canAudit = Boolean(currentUser?.permissions.executar_auditoria);
 
   return (
     <section className="content-band">
@@ -177,6 +181,8 @@ export default function AntenasPage() {
                     <td>{antena.ultimo_ping ? new Date(antena.ultimo_ping).toLocaleString("pt-BR") : "-"}</td>
                     <td className="actions-cell">
                       <div className="action-buttons">
+                        {!canSync && !canAudit ? <span className="muted-text">Sem permissoes</span> : null}
+                        {canSync ? (
                         <button
                           className="button action-button"
                           disabled={!antena.online || busyId === antena.id}
@@ -187,6 +193,8 @@ export default function AntenasPage() {
                           <Play size={17} />
                           Sincronizar
                         </button>
+                        ) : null}
+                        {canAudit ? (
                         <button
                           className="button yellow action-button"
                           disabled={!antena.online || busyId === antena.id}
@@ -197,6 +205,7 @@ export default function AntenasPage() {
                           <Radar size={17} />
                           Auditar
                         </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>

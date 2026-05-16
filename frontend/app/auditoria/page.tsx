@@ -9,6 +9,7 @@ import type {
   AuditoriaJob,
   AuditoriaMetadados,
   AuditoriaProcessada,
+  CurrentUser,
   ItemPatrimonial,
   TagsReadResponse
 } from "@/lib/types";
@@ -89,6 +90,7 @@ function HelpTip({ text }: { text: string }) {
 
 export default function AuditoriaPage() {
   const [antenas, setAntenas] = useState<Antena[]>([]);
+  const [currentUser] = useState<CurrentUser | null>(() => api.currentUser());
   const [selectedAntennaIds, setSelectedAntennaIds] = useState<number[]>([]);
   const [auditAll, setAuditAll] = useState(true);
   const [selectorOpen, setSelectorOpen] = useState(false);
@@ -112,20 +114,20 @@ export default function AuditoriaPage() {
     setError("");
     try {
       const [antenasData, jobsData, processedData, itensData] = await Promise.all([
-        api.listAntenas(),
-        api.listAuditorias(),
-        api.listAuditoriasProcessadas(),
-        api.listItens()
+        api.listAntenas({ page_size: 100 }),
+        api.listAuditorias({ page_size: 25 }),
+        api.listAuditoriasProcessadas({ page_size: 25 }),
+        api.listItens({ page_size: 100 })
       ]);
-      setAntenas(antenasData);
-      setSimulationAntennaId((current) => current || antenasData[0]?.id || "");
+      setAntenas(antenasData.results);
+      setSimulationAntennaId((current) => current || antenasData.results[0]?.id || "");
       setSelectedAntennaIds((current) => {
-        const availableIds = new Set(antenasData.map((antena) => antena.id));
+        const availableIds = new Set(antenasData.results.map((antena) => antena.id));
         return current.filter((id) => availableIds.has(id));
       });
-      setJobs(jobsData);
-      setProcessedAudits(processedData);
-      setItens(itensData);
+      setJobs(jobsData.results);
+      setProcessedAudits(processedData.results);
+      setItens(itensData.results);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível carregar auditorias.");
     } finally {
@@ -294,6 +296,7 @@ export default function AuditoriaPage() {
     ? Math.min(100, Math.max(0, ((now - activeProcess.startedAt) / (activeProcess.expiresAt - activeProcess.startedAt)) * 100))
     : 0;
   const remainingSeconds = activeProcess ? Math.max(0, Math.ceil((activeProcess.expiresAt - now) / 1000)) : 0;
+  const canAudit = Boolean(currentUser?.permissions.executar_auditoria);
 
   return (
     <section className="content-band">
@@ -388,7 +391,7 @@ export default function AuditoriaPage() {
               </div>
               <button
                 className="button yellow"
-                disabled={submitting || antenas.length === 0 || (!auditAll && selectedAntennaIds.length === 0)}
+                disabled={!canAudit || submitting || antenas.length === 0 || (!auditAll && selectedAntennaIds.length === 0)}
                 type="button"
                 onClick={startAudit}
               >
@@ -439,7 +442,7 @@ export default function AuditoriaPage() {
             </p>
             <button
               className="button"
-              disabled={submitting || !simulationAntennaId}
+              disabled={!canAudit || submitting || !simulationAntennaId}
               style={{ marginTop: 12 }}
               type="button"
               onClick={sendAuditResult}

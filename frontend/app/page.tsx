@@ -3,15 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Activity, AlertTriangle, Antenna, RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
-import type { Antena, Inconsistencia, ItemPatrimonial, TimelineEvento } from "@/lib/types";
+import type { Antena, Inconsistencia, OperacionalResumo, TimelineEvento } from "@/lib/types";
 import { ErrorState, LoadingState } from "@/components/ui/DataState";
 import { StatCard } from "@/components/ui/StatCard";
 
 export default function HomePage() {
   const [antenas, setAntenas] = useState<Antena[]>([]);
-  const [itens, setItens] = useState<ItemPatrimonial[]>([]);
   const [inconsistencias, setInconsistencias] = useState<Inconsistencia[]>([]);
   const [timeline, setTimeline] = useState<TimelineEvento[]>([]);
+  const [resumo, setResumo] = useState<OperacionalResumo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -19,16 +19,16 @@ export default function HomePage() {
     setLoading(true);
     setError("");
     try {
-      const [antenasData, itensData, inconsistenciasData, timelineData] = await Promise.all([
-        api.listAntenas(),
-        api.listItens(),
-        api.listInconsistencias("false"),
-        api.listTimeline()
+      const [antenasData, resumoData, inconsistenciasData, timelineData] = await Promise.all([
+        api.listAntenas({ page_size: 5 }),
+        api.resumo(),
+        api.listInconsistencias({ resolvida: "false", page_size: 5 }),
+        api.listTimeline({ page_size: 8 })
       ]);
-      setAntenas(antenasData);
-      setItens(itensData);
-      setInconsistencias(inconsistenciasData);
-      setTimeline(timelineData);
+      setAntenas(antenasData.results);
+      setResumo(resumoData);
+      setInconsistencias(inconsistenciasData.results);
+      setTimeline(timelineData.results);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível carregar o painel.");
     } finally {
@@ -42,12 +42,12 @@ export default function HomePage() {
 
   const stats = useMemo(
     () => ({
-      leitoresOnline: antenas.filter((antena) => antena.online).length,
-      leitoresAtivos: antenas.filter((antena) => antena.ativa).length,
-      itensAtivos: itens.filter((item) => item.ativo).length,
-      inconsistencias: inconsistencias.length
+      leitoresOnline: resumo?.leitores_online || 0,
+      leitoresAtivos: resumo?.leitores_ativos || 0,
+      itensAtivos: resumo?.itens_ativos || 0,
+      inconsistencias: resumo?.inconsistencias_abertas || 0
     }),
-    [antenas, inconsistencias, itens]
+    [resumo]
   );
 
   return (

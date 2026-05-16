@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ChevronDown, ChevronRight, History, MapPin, Search } from "lucide-react";
 import { api } from "@/lib/api";
-import type { ItemPatrimonial, TimelineEvento } from "@/lib/types";
+import type { ItemPatrimonial, PaginatedResponse, TimelineEvento } from "@/lib/types";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/DataState";
+import { PaginationControls } from "@/components/ui/PaginationControls";
 
 type LocalGroup = {
   id: string;
@@ -16,6 +17,8 @@ type LocalGroup = {
 
 export default function ItensPage() {
   const [itens, setItens] = useState<ItemPatrimonial[]>([]);
+  const [pageData, setPageData] = useState<PaginatedResponse<ItemPatrimonial> | null>(null);
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [expandedLocalIds, setExpandedLocalIds] = useState<Record<string, boolean>>({});
@@ -25,11 +28,16 @@ export default function ItensPage() {
   const [timelineError, setTimelineError] = useState("");
   const [error, setError] = useState("");
 
-  async function load(term = search) {
-    setLoading(true);
+  const pageSize = 25;
+
+  async function load(term = search, nextPage = page) {
+    if (itens.length === 0) setLoading(true);
     setError("");
     try {
-      setItens(await api.listItens(term));
+      const response = await api.listItens({ search: term, page: nextPage, page_size: pageSize });
+      setItens(response.results);
+      setPageData(response);
+      setPage(nextPage);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Nao foi possivel carregar itens.");
     } finally {
@@ -45,8 +53,8 @@ export default function ItensPage() {
 
     setTimelineLoadingId(item.id);
     try {
-      const timeline = await api.listTimeline(item.id);
-      setTimelineByItem((current) => ({ ...current, [item.id]: timeline }));
+      const timeline = await api.listTimeline({ item_id: item.id, page_size: 25 });
+      setTimelineByItem((current) => ({ ...current, [item.id]: timeline.results }));
     } catch (err) {
       setTimelineError(err instanceof Error ? err.message : "Nao foi possivel carregar historico do item.");
     } finally {
@@ -78,7 +86,7 @@ export default function ItensPage() {
           className="toolbar"
           onSubmit={(event) => {
             event.preventDefault();
-            load(search);
+            load(search, 1);
           }}
         >
           <div className="field">
@@ -159,6 +167,7 @@ export default function ItensPage() {
             })}
           </div>
         ) : null}
+        {!loading && !error && pageData ? <PaginationControls data={pageData} page={page} pageSize={pageSize} onPageChange={(nextPage) => load(search, nextPage)} /> : null}
       </article>
     </section>
   );

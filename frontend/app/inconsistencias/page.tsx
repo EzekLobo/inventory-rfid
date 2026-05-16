@@ -14,8 +14,9 @@ import {
   ShieldQuestion
 } from "lucide-react";
 import { api } from "@/lib/api";
-import type { Inconsistencia, ItemPatrimonial, Local } from "@/lib/types";
+import type { CurrentUser, Inconsistencia, ItemPatrimonial, Local, PaginatedResponse } from "@/lib/types";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/DataState";
+import { PaginationControls } from "@/components/ui/PaginationControls";
 
 const labels: Record<string, string> = {
   local_divergente: "Local divergente",
@@ -50,11 +51,14 @@ type AuditGroup = {
 
 export default function InconsistenciasPage() {
   const [data, setData] = useState<Inconsistencia[]>([]);
+  const [currentUser] = useState<CurrentUser | null>(() => api.currentUser());
+  const [pageData, setPageData] = useState<PaginatedResponse<Inconsistencia> | null>(null);
   const [locais, setLocais] = useState<Local[]>([]);
   const [itens, setItens] = useState<ItemPatrimonial[]>([]);
   const [tipo, setTipo] = useState("");
   const [resolvida, setResolvida] = useState("false");
-  const [expandedAuditIds, setExpandedAuditIds] = useState<Record<string, boolean>>({});
+  const [page, setPage] = useState(1);
+  const [expandedAuditId, setExpandedAuditId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -68,18 +72,22 @@ export default function InconsistenciasPage() {
   });
   const [associateItemId, setAssociateItemId] = useState<number | "">("");
 
-  async function load() {
-    setLoading(true);
+  const pageSize = 25;
+
+  async function load(nextPage = page) {
+    if (data.length === 0) setLoading(true);
     setError("");
     try {
       const [inconsistenciasData, locaisData, itensData] = await Promise.all([
-        api.listInconsistencias(resolvida, tipo),
-        api.listLocais(),
-        api.listItens()
+        api.listInconsistencias({ resolvida, tipo, page: nextPage, page_size: pageSize }),
+        api.listLocais({ page_size: 100 }),
+        api.listItens({ page_size: 100 })
       ]);
-      setData(inconsistenciasData);
-      setLocais(locaisData);
-      setItens(itensData);
+      setData(inconsistenciasData.results);
+      setPageData(inconsistenciasData);
+      setLocais(locaisData.results);
+      setItens(itensData.results);
+      setPage(nextPage);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Nao foi possivel carregar inconsistencias.");
     } finally {
@@ -88,7 +96,7 @@ export default function InconsistenciasPage() {
   }
 
   useEffect(() => {
-    load();
+    load(1);
   }, [tipo, resolvida]);
 
   const groups = useMemo(() => groupByAudit(data), [data]);
@@ -98,12 +106,18 @@ export default function InconsistenciasPage() {
   );
   const selectedMode = action?.mode || null;
   const choosingResolution = Boolean(activeInconsistencia && selectedMode === null);
+  const canResolve = Boolean(currentUser?.permissions.resolver_inconsistencias);
 
   function toggleAudit(id: string) {
-    setExpandedAuditIds((current) => ({ ...current, [id]: !current[id] }));
+    setExpandedAuditId((current) => (current === id ? null : id));
+    setAction(null);
   }
 
   function startResolution(item: Inconsistencia) {
+    if (action?.id === item.id) {
+      setAction(null);
+      return;
+    }
     startAction(item, shouldChooseMode(item.tipo) ? null : defaultModeForType(item.tipo));
   }
 
@@ -111,7 +125,7 @@ export default function InconsistenciasPage() {
     setAction({ id: item.id, mode });
     setSuccess("");
     setError("");
-    setMotivo(mode ? defaultReason(mode) : "");
+    setMotivo("");
     setAssociateItemId("");
     setUnknownForm({
       nome: item.item_nome || "",
@@ -123,7 +137,7 @@ export default function InconsistenciasPage() {
   function selectMode(mode: ActionMode) {
     if (!activeInconsistencia) return;
     setAction({ id: activeInconsistencia.id, mode });
-    setMotivo(defaultReason(mode));
+    setMotivo("");
   }
 
   function returnToOptions() {
@@ -142,10 +156,10 @@ export default function InconsistenciasPage() {
     setSuccess("");
     try {
       if (selectedMode === "confirmar-local") {
-        await api.confirmarLocalInconsistencia(activeInconsistencia.id, motivo);
+        await api.confirmarLocalInconsistencia(activeInconsistencia.id, reasonOrDefault(motivo, selectedMode));
         setSuccess("Local logico atualizado e inconsistencia resolvida.");
       } else if (selectedMode === "resolver") {
-        await api.resolverInconsistencia(activeInconsistencia.id, motivo);
+        await api.resolverInconsistencia(activeInconsistencia.id, reasonOrDefault(motivo, selectedMode));
         setSuccess("Inconsistencia resolvida com justificativa registrada.");
       } else if (selectedMode === "cadastrar-tag") {
         await api.cadastrarTagDesconhecida(activeInconsistencia.id, {
@@ -209,7 +223,7 @@ export default function InconsistenciasPage() {
               </select>
             </div>
           </div>
-          <button className="button ghost" type="button" onClick={load}>
+          <button className="button ghost" type="button" onClick={() => load(page)}>
             <RefreshCw size={18} />
             Atualizar
           </button>
@@ -223,7 +237,7 @@ export default function InconsistenciasPage() {
         {!loading && !error && groups.length > 0 ? (
           <div className="grouped-list">
             {groups.map((group) => {
-              const expanded = Boolean(expandedAuditIds[group.id]);
+              const expanded = expandedAuditId === group.id;
               return (
                 <section className="group-block" key={group.id}>
                   <button className="group-header" type="button" onClick={() => toggleAudit(group.id)}>
@@ -231,89 +245,92 @@ export default function InconsistenciasPage() {
                       {expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                       <strong>{group.title}</strong>
                     </span>
+                    <span className="group-date">{new Date(group.createdAt).toLocaleString("pt-BR")}</span>
                     <span className="group-summary">
                       <span className="badge">{group.items.length} total</span>
                       {group.abertas ? <span className="badge red">{group.abertas} aberta(s)</span> : null}
                       {group.resolvidas ? <span className="badge green">{group.resolvidas} resolvida(s)</span> : null}
                     </span>
                   </button>
-                  <div className="group-meta">
-                    <span>{group.local || "Sem local informado"}</span>
-                    {group.antennaId ? <span>Leitor {group.antennaId}</span> : null}
-                    <span>{new Date(group.createdAt).toLocaleString("pt-BR")}</span>
-                    <span>{group.tipos.map((value) => labels[value] || value).join(" | ")}</span>
-                  </div>
 
                   {expanded ? (
-                    <div className="compact-list">
-                      {group.items.map((item) => (
-                        <article className="compact-row" key={item.id}>
-                          <div className="compact-main">
-                            <span className="compact-title">
-                              <strong>{item.item_nome || item.item_id || item.tag_id || `#${item.id}`}</strong>
-                            </span>
-                            <span>{labels[item.tipo] || item.tipo}</span>
-                            <span>Tag {item.tag_id || "-"}</span>
-                            <span>
-                              Logico: {item.local_logico_nome || item.local_logico_id || "-"} | Fisico:{" "}
-                              {item.local_fisico_nome || item.local_fisico_id || "-"}
-                            </span>
-                          </div>
-                          <div className="compact-badges">
-                            <span className={item.resolvida ? "badge green" : "badge red"}>
-                              {item.resolvida ? "Resolvida" : "Aberta"}
-                            </span>
-                            <ActionButtons item={item} onStart={startResolution} />
-                          </div>
-                        </article>
-                      ))}
-                    </div>
+                    <>
+                      <div className="group-meta">
+                        {group.antennaId ? <span>Leitor {group.antennaId}</span> : null}
+                        <span>{group.tipos.map((value) => labels[value] || value).join(" | ")}</span>
+                      </div>
+                      <div className="compact-list">
+                        {group.items.map((item) => (
+                          <article className="compact-row" key={item.id}>
+                            <div className="compact-main">
+                              <span className="compact-title">
+                                <strong>{item.item_nome || item.item_id || item.tag_id || `#${item.id}`}</strong>
+                                <span className={item.resolvida ? "badge green" : "badge red"}>
+                                  {item.resolvida ? "Resolvida" : "Aberta"}
+                                </span>
+                              </span>
+                              <span className="compact-meta-line">
+                                <span>{labels[item.tipo] || item.tipo}</span>
+                                <span>Tag {item.tag_id || "-"}</span>
+                                <span>Logico: {item.local_logico_nome || item.local_logico_id || "-"}</span>
+                                <span>Fisico: {item.local_fisico_nome || item.local_fisico_id || "-"}</span>
+                              </span>
+                            </div>
+                            <div className="compact-badges">
+                              <ActionButtons active={action?.id === item.id} canResolve={canResolve} item={item} onStart={startResolution} />
+                            </div>
+                            {action?.id === item.id && activeInconsistencia ? (
+                              <div className="compact-detail inline-resolution-panel">
+                                <ResolutionHeader inconsistencia={activeInconsistencia} />
+                                {choosingResolution ? (
+                                  <ResolutionOptions inconsistencia={activeInconsistencia} onSelect={selectMode} />
+                                ) : selectedMode ? (
+                                  <form className="resolution-form" onSubmit={submitAction}>
+                                    <div className="resolution-fields">
+                                      <ResolutionFormFields
+                                        associateItemId={associateItemId}
+                                        itens={itens}
+                                        locais={locais}
+                                        mode={selectedMode}
+                                        motivo={motivo}
+                                        setAssociateItemId={setAssociateItemId}
+                                        setMotivo={setMotivo}
+                                        setUnknownForm={setUnknownForm}
+                                        unknownForm={unknownForm}
+                                      />
+                                    </div>
+
+                                    <div className="settings-actions">
+                                      <button className="button" disabled={busy} type="submit">
+                                        <Check size={17} />
+                                        Confirmar
+                                      </button>
+                                      {shouldChooseMode(activeInconsistencia.tipo) ? (
+                                        <button className="button subtle" disabled={busy} type="button" onClick={returnToOptions}>
+                                          <ArrowLeft size={17} />
+                                          Voltar
+                                        </button>
+                                      ) : null}
+                                      <button className="button ghost" disabled={busy} type="button" onClick={() => setAction(null)}>
+                                        Cancelar
+                                      </button>
+                                    </div>
+                                  </form>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </article>
+                        ))}
+                      </div>
+                    </>
                   ) : null}
                 </section>
               );
             })}
           </div>
         ) : null}
+        {!loading && !error && pageData ? <PaginationControls data={pageData} page={page} pageSize={pageSize} onPageChange={load} /> : null}
       </article>
-
-      {action && activeInconsistencia ? (
-        <article className="panel resolution-panel">
-          <ResolutionHeader inconsistencia={activeInconsistencia} onClose={() => setAction(null)} />
-          {choosingResolution ? (
-            <ResolutionOptions inconsistencia={activeInconsistencia} onSelect={selectMode} />
-          ) : selectedMode ? (
-            <form className="resolution-form" onSubmit={submitAction}>
-              <ResolutionFormFields
-                associateItemId={associateItemId}
-                itens={itens}
-                locais={locais}
-                mode={selectedMode}
-                motivo={motivo}
-                setAssociateItemId={setAssociateItemId}
-                setMotivo={setMotivo}
-                setUnknownForm={setUnknownForm}
-                unknownForm={unknownForm}
-              />
-
-              <div className="settings-actions">
-                <button className="button" disabled={busy} type="submit">
-                  <Check size={17} />
-                  Confirmar
-                </button>
-                {shouldChooseMode(activeInconsistencia.tipo) ? (
-                  <button className="button subtle" disabled={busy} type="button" onClick={returnToOptions}>
-                    <ArrowLeft size={17} />
-                    Voltar
-                  </button>
-                ) : null}
-                <button className="button ghost" disabled={busy} type="button" onClick={() => setAction(null)}>
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          ) : null}
-        </article>
-      ) : null}
     </section>
   );
 }
@@ -353,15 +370,18 @@ function groupByAudit(items: Inconsistencia[]): AuditGroup[] {
     });
 }
 
-function ActionButtons({ item, onStart }: { item: Inconsistencia; onStart: (item: Inconsistencia) => void }) {
+function ActionButtons({ active, canResolve, item, onStart }: { active: boolean; canResolve: boolean; item: Inconsistencia; onStart: (item: Inconsistencia) => void }) {
   if (item.resolvida) {
     return <span className="muted-text">Sem acoes</span>;
+  }
+  if (!canResolve) {
+    return <span className="muted-text">Sem permissao</span>;
   }
 
   return (
     <button className="button action-button" type="button" onClick={() => onStart(item)}>
       <ChevronDown size={17} />
-      Resolver
+      {active ? "Recolher" : "Resolver"}
     </button>
   );
 }
@@ -395,13 +415,7 @@ function ResolutionOptions({
   );
 }
 
-function ResolutionHeader({
-  inconsistencia,
-  onClose
-}: {
-  inconsistencia: Inconsistencia;
-  onClose: () => void;
-}) {
+function ResolutionHeader({ inconsistencia }: { inconsistencia: Inconsistencia }) {
   return (
     <div className="resolution-head">
       <div>
@@ -411,9 +425,6 @@ function ResolutionHeader({
           {inconsistencia.local_fisico_nome ? ` - ${inconsistencia.local_fisico_nome}` : ""}
         </p>
       </div>
-      <button className="button ghost" type="button" onClick={onClose}>
-        Fechar
-      </button>
     </div>
   );
 }
@@ -469,7 +480,7 @@ function ResolutionFormFields({
       <span>Justificativa</span>
       <textarea
         className="textarea compact"
-        required
+        placeholder={`Sugestao: ${defaultReason(mode)}`}
         value={motivo}
         onChange={(event) => setMotivo(event.target.value)}
       />
@@ -520,6 +531,10 @@ function defaultReason(mode: ActionMode) {
     "associar-tag": "tag associada a item existente"
   };
   return reasons[mode];
+}
+
+function reasonOrDefault(value: string, mode: ActionMode) {
+  return value.trim() || defaultReason(mode);
 }
 
 function defaultModeForType(tipo: string): ActionMode {
