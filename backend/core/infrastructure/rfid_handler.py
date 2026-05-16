@@ -137,12 +137,20 @@ class TopologyClassifier:
 
 
 class RFIDEventProcessor:
-    def __init__(self):
-        self.sync_manager = SyncManager()
-        self.classifier = TopologyClassifier(sync_manager=self.sync_manager)
-        self.auditoria_manager = AuditoriaManager()
-        self.auditoria_reconciliacao_manager = AuditoriaReconciliacaoManager()
-        self.command_service = AntennaCommandService()
+    def __init__(
+        self,
+        *,
+        sync_manager: SyncManager | None = None,
+        classifier: TopologyClassifier | None = None,
+        auditoria_manager: AuditoriaManager | None = None,
+        auditoria_reconciliacao_manager: AuditoriaReconciliacaoManager | None = None,
+        command_service: AntennaCommandService | None = None,
+    ):
+        self.sync_manager = sync_manager or getattr(classifier, "sync_manager", None) or SyncManager()
+        self.classifier = classifier or TopologyClassifier(sync_manager=self.sync_manager)
+        self.auditoria_manager = auditoria_manager or AuditoriaManager()
+        self.auditoria_reconciliacao_manager = auditoria_reconciliacao_manager or AuditoriaReconciliacaoManager()
+        self.command_service = command_service or AntennaCommandService()
 
     def process_ping(self, *, antenna: AntenaRFID) -> dict:
         now = timezone.now()
