@@ -1,14 +1,17 @@
 from datetime import timedelta
 
 from django.conf import settings
+from django.contrib.auth import get_user_model, password_validation, update_session_auth_hash
 from django.db.models import Q
 from django.utils.dateparse import parse_date
 from django.utils import timezone
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import AllowAny, BasePermission, IsAdminUser, IsAuthenticated, SAFE_METHODS
 from rest_framework.response import Response
 
+from core.api.pagination import StandardResultsSetPagination
 from core.domain.models import (
     AntenaRFID,
     AuditoriaJob,
@@ -16,10 +19,63 @@ from core.domain.models import (
     ItemPatrimonial,
     Local,
     NotificacaoInconsistencia,
+    TecnicoPermissoes,
     TimelineEvento,
 )
 from core.domain.services import AuditoriaManager, SyncManager
 from core.middleware.rfid_handler import RFIDEventProcessor
+
+
+PERMISSION_KEYS = [
+    "gerenciar_cadastros",
+    "acionar_leitores",
+    "executar_auditoria",
+    "resolver_inconsistencias",
+    "ver_logs",
+]
+
+
+def is_admin_user(user):
+    return bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
+
+
+def tecnico_permissions_dict():
+    permissions = TecnicoPermissoes.atual()
+    return {key: getattr(permissions, key) for key in PERMISSION_KEYS} | {"gerenciar_usuarios": False}
+
+
+def user_permissions(user):
+    if is_admin_user(user):
+        return {key: True for key in PERMISSION_KEYS} | {"gerenciar_usuarios": True}
+    return tecnico_permissions_dict()
+
+
+def user_profile(user):
+    return "admin" if is_admin_user(user) else "tecnico"
+
+
+def require_user_permission(user, permission_key):
+    if not user_permissions(user).get(permission_key):
+        raise PermissionDenied("Voce nao tem permissao para executar esta acao.")
+
+
+class CadastroPermission(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if request.method in SAFE_METHODS:
+            return True
+        return user_permissions(request.user).get("gerenciar_cadastros", False)
+
+
+class LogPermission(BasePermission):
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and (request.method in SAFE_METHODS)
+            and user_permissions(request.user).get("ver_logs", False)
+        )
 
 
 class MovimentacaoSerializer(serializers.Serializer):
@@ -65,6 +121,67 @@ class AssociacaoTagDesconhecidaSerializer(serializers.Serializer):
 
 class AcionamentoAntenaSerializer(serializers.Serializer):
     duracao_segundos = serializers.IntegerField(required=False, min_value=1, default=5)
+
+
+class TrocaSenhaSerializer(serializers.Serializer):
+    senha_atual = serializers.CharField(write_only=True)
+    nova_senha = serializers.CharField(write_only=True)
+
+    def validate_nova_senha(self, value):
+        password_validation.validate_password(value, self.context["request"].user)
+        return value
+
+
+class TecnicoPermissoesSerializer(serializers.ModelSerializer):
+    gerenciar_usuarios = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TecnicoPermissoes
+        fields = [
+            "gerenciar_cadastros",
+            "acionar_leitores",
+            "executar_auditoria",
+            "resolver_inconsistencias",
+            "ver_logs",
+            "gerenciar_usuarios",
+        ]
+        read_only_fields = ["gerenciar_usuarios"]
+
+    def get_gerenciar_usuarios(self, obj):
+        return False
+
+
+class UsuarioSerializer(serializers.ModelSerializer):
+    perfil = serializers.SerializerMethodField()
+    is_admin = serializers.SerializerMethodField()
+    password = serializers.CharField(required=False, allow_blank=True, write_only=True)
+
+    class Meta:
+        model = get_user_model()
+        fields = ["id", "username", "first_name", "last_name", "email", "is_active", "is_staff", "is_admin", "perfil", "password"]
+        read_only_fields = ["id", "is_admin", "perfil"]
+
+    def get_is_admin(self, obj):
+        return is_admin_user(obj)
+
+    def get_perfil(self, obj):
+        return user_profile(obj)
+
+    def create(self, validated_data):
+        password = validated_data.pop("password", "")
+        user = get_user_model()(**validated_data)
+        user.set_password(password or get_user_model().objects.make_random_password())
+        user.save()
+        return user
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop("password", "")
+        for key, value in validated_data.items():
+            setattr(instance, key, value)
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance
 
 
 class RFIDEventSerializer(serializers.Serializer):
@@ -327,9 +444,78 @@ class ItemPatrimonialListSerializer(serializers.ModelSerializer):
         ]
 
 
+class OperacionalResumoViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+        return Response(
+            {
+                "leitores_online": AntenaRFID.objects.filter(online=True).count(),
+                "leitores_ativos": AntenaRFID.objects.filter(ativa=True).count(),
+                "itens_ativos": ItemPatrimonial.objects.filter(ativo=True).count(),
+                "inconsistencias_abertas": NotificacaoInconsistencia.objects.filter(resolvida=False).count(),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class AuthViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=["get"], url_path="me")
+    def me(self, request):
+        user = request.user
+        return Response(
+            {
+                "id": user.id,
+                "username": user.get_username(),
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "email": user.email,
+                "is_admin": is_admin_user(user),
+                "perfil": user_profile(user),
+                "permissions": user_permissions(user),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=False, methods=["post"], url_path="trocar-senha")
+    def trocar_senha(self, request):
+        serializer = TrocaSenhaSerializer(data=request.data or {}, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        if not request.user.check_password(serializer.validated_data["senha_atual"]):
+            return Response({"detail": "Senha atual incorreta."}, status=status.HTTP_400_BAD_REQUEST)
+        request.user.set_password(serializer.validated_data["nova_senha"])
+        request.user.save(update_fields=["password"])
+        update_session_auth_hash(request, request.user)
+        return Response({"status": "senha_alterada"}, status=status.HTTP_200_OK)
+
+
+class UsuarioViewSet(viewsets.ModelViewSet):
+    serializer_class = UsuarioSerializer
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        return get_user_model().objects.order_by("username")
+
+
+class TecnicoPermissoesViewSet(viewsets.ViewSet):
+    permission_classes = [IsAdminUser]
+
+    def list(self, request):
+        return Response(TecnicoPermissoesSerializer(TecnicoPermissoes.atual()).data, status=status.HTTP_200_OK)
+
+    def create(self, request):
+        instance = TecnicoPermissoes.atual()
+        serializer = TecnicoPermissoesSerializer(instance, data=request.data or {}, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(TecnicoPermissoesSerializer(instance).data, status=status.HTTP_200_OK)
+
+
 class LocalViewSet(viewsets.ModelViewSet):
     serializer_class = LocalSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CadastroPermission]
     queryset = Local.objects.order_by("nome")
 
 
@@ -337,6 +523,11 @@ class AntenaRFIDViewSet(viewsets.ModelViewSet):
     serializer_class = AntenaRFIDListSerializer
     permission_classes = [IsAuthenticated]
     event_processor = RFIDEventProcessor()
+
+    def get_permissions(self):
+        if self.action in {"create", "update", "partial_update", "destroy"}:
+            return [CadastroPermission()]
+        return [IsAuthenticated()]
 
     def get_queryset(self):
         self.event_processor.deactivate_expired_antennas()
@@ -354,10 +545,12 @@ class AntenaRFIDViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="ativar")
     def ativar(self, request, pk=None):
+        require_user_permission(request.user, "acionar_leitores")
         return self._acionar(request=request, pk=pk, audit=False)
 
     @action(detail=True, methods=["post"], url_path="auditar")
     def auditar(self, request, pk=None):
+        require_user_permission(request.user, "executar_auditoria")
         return self._acionar(request=request, pk=pk, audit=True)
 
     def _acionar(self, *, request, pk=None, audit: bool):
@@ -418,7 +611,7 @@ class AntenaRFIDViewSet(viewsets.ModelViewSet):
 
 class ItemPatrimonialViewSet(viewsets.ModelViewSet):
     serializer_class = ItemPatrimonialListSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CadastroPermission]
     sync_manager = SyncManager()
 
     def get_queryset(self):
@@ -439,6 +632,7 @@ class ItemPatrimonialViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="inativar")
     def inativar(self, request, pk=None):
+        require_user_permission(request.user, "gerenciar_cadastros")
         serializer = BaixaManualSerializer(data=request.data or {})
         serializer.is_valid(raise_exception=True)
         item = ItemPatrimonial.objects.filter(id=pk).first()
@@ -647,7 +841,7 @@ class RFIDEventosViewSet(viewsets.ViewSet):
 
 class TimelineViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = TimelineListSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [LogPermission]
 
     def get_queryset(self):
         queryset = TimelineEvento.objects.select_related("item", "usuario").order_by("-criado_em")
@@ -714,6 +908,7 @@ class InconsistenciaViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="resolver")
     def resolver(self, request, pk=None):
+        require_user_permission(request.user, "resolver_inconsistencias")
         serializer = ResolucaoInconsistenciaSerializer(data=request.data or {})
         serializer.is_valid(raise_exception=True)
         inconsistencia = self.get_queryset().filter(id=pk).first()
@@ -738,6 +933,7 @@ class InconsistenciaViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="confirmar-local")
     def confirmar_local(self, request, pk=None):
+        require_user_permission(request.user, "resolver_inconsistencias")
         serializer = ResolucaoInconsistenciaSerializer(data=request.data or {})
         serializer.is_valid(raise_exception=True)
         inconsistencia = self.get_queryset().filter(id=pk).first()
@@ -766,6 +962,7 @@ class InconsistenciaViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="cadastrar-tag")
     def cadastrar_tag(self, request, pk=None):
+        require_user_permission(request.user, "resolver_inconsistencias")
         serializer = CadastroTagDesconhecidaSerializer(data=request.data or {})
         serializer.is_valid(raise_exception=True)
         inconsistencia = self.get_queryset().filter(id=pk).first()
@@ -806,6 +1003,7 @@ class InconsistenciaViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="associar-tag")
     def associar_tag(self, request, pk=None):
+        require_user_permission(request.user, "resolver_inconsistencias")
         serializer = AssociacaoTagDesconhecidaSerializer(data=request.data or {})
         serializer.is_valid(raise_exception=True)
         inconsistencia = self.get_queryset().filter(id=pk).first()
@@ -849,28 +1047,33 @@ class InconsistenciaViewSet(viewsets.ReadOnlyModelViewSet):
 class AuditoriaViewSet(viewsets.ViewSet):
     auditoria_manager = AuditoriaManager()
 
+    def _paginated_response(self, request, queryset, serializer_class):
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(queryset, request)
+        serializer = serializer_class(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
     def get_permissions(self):
-        if self.action == "broadcast":
-            return [IsAdminUser()]
         return [IsAuthenticated()]
 
     def list(self, request):
         self.auditoria_manager.finalize_expired_jobs()
         jobs = AuditoriaJob.objects.select_related("solicitado_por").prefetch_related(
             "leitores__antena__local",
-        ).order_by("-iniciado_em")[:100]
-        return Response(AuditoriaJobSerializer(jobs, many=True).data, status=status.HTTP_200_OK)
+        ).order_by("-iniciado_em")
+        return self._paginated_response(request, jobs, AuditoriaJobSerializer)
 
     @action(detail=False, methods=["get"], url_path="processadas")
     def processadas(self, request):
         eventos = TimelineEvento.objects.filter(
             Q(metadados__evento="auditoria_processada") | Q(metadados__evento="auditoria_iniciada"),
             tipo=TimelineEvento.TipoEvento.SISTEMA,
-        ).order_by("-criado_em")[:100]
-        return Response(AuditoriaTimelineSerializer(eventos, many=True).data, status=status.HTTP_200_OK)
+        ).order_by("-criado_em")
+        return self._paginated_response(request, eventos, AuditoriaTimelineSerializer)
 
     @action(detail=False, methods=["post"], url_path="broadcast")
     def broadcast(self, request):
+        require_user_permission(request.user, "executar_auditoria")
         serializer = BroadcastSerializer(data=request.data or {})
         serializer.is_valid(raise_exception=True)
         duracao_segundos = serializer.validated_data["duracao_segundos"]
