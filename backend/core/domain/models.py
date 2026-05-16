@@ -33,6 +33,11 @@ class AntenaRFID(models.Model):
     ultimo_ping = models.DateTimeField(null=True, blank=True)
     online = models.BooleanField(default=False)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["online", "ativa"], name="antenna_online_active_idx"),
+        ]
+
     def __str__(self):
         return f"{self.nome} ({self.hardware_id})"
 
@@ -99,6 +104,12 @@ class LeituraRFID(models.Model):
     payload = models.JSONField(default=dict, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["tag_id", "criado_em"], name="reading_tag_created_idx"),
+            models.Index(fields=["classificacao", "criado_em"], name="reading_class_created_idx"),
+        ]
+
 
 class TimelineEvento(models.Model):
     class TipoEvento(models.TextChoices):
@@ -125,6 +136,11 @@ class TimelineEvento(models.Model):
     )
     metadados = models.JSONField(default=dict, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["criado_em", "tipo"], name="timeline_created_type_idx"),
+        ]
 
 
 class NotificacaoInconsistencia(models.Model):
@@ -164,6 +180,12 @@ class NotificacaoInconsistencia(models.Model):
     resolvida_em = models.DateTimeField(null=True, blank=True)
     metadados = models.JSONField(default=dict, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["resolvida", "tipo"], name="incons_open_type_idx"),
+            models.Index(fields=["tag_id", "resolvida"], name="incons_tag_open_idx"),
+        ]
 
 
 class AuditoriaJob(models.Model):
