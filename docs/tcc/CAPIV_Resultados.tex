@@ -51,36 +51,26 @@ Para documentação do TCC, recomenda-se utilizar capturas de tela do dashboard,
 
 A validação funcional foi realizada em ambiente controlado, utilizando um computador pessoal, um leitor RFID de proximidade de baixo custo e uma única tag RFID. O leitor empregado exige aproximação direta da tag para captura do identificador, diferindo de uma infraestrutura RFID de maior alcance. Assim, os testes tiveram como objetivo verificar o fluxo lógico da aplicação: leitura da tag, captura pelo adaptador intermediário, envio do evento à API REST, processamento pelo backend, persistência dos dados e atualização das informações de inventário. Não foram avaliados alcance, leitura simultânea de múltiplas tags ou desempenho físico de antenas RFID.
 
-Os resultados foram organizados em três categorias. A primeira corresponde ao fluxo validado fisicamente, envolvendo leitor USB de proximidade, uma tag, comunicador intermediário, envio à API e atualização do sistema. A segunda corresponde à verificação funcional por software, incluindo o evento \textit{motion\_detected}, a abertura de janela de leitura, o retorno do comando \textit{start\_reading} e o processamento de eventos \textit{tags\_read}. A terceira reúne aspectos não validados fisicamente neste trabalho, como sensor infravermelho real, antena de longo alcance, leitura simultânea em massa, alcance, acurácia e interferência. A Tabela \ref{tab:testes-funcionais} resume os principais cenários considerados, organizados a partir da relação entre procedimento executado, resultado esperado e resultado observado, conforme práticas de documentação de testes de software \cite{iso29119}.
+Os resultados foram organizados em três categorias. A primeira corresponde ao fluxo validado fisicamente, envolvendo leitor USB de proximidade, uma tag, comunicador intermediário, envio à API e atualização do sistema. A segunda corresponde à verificação funcional por software, incluindo o evento \textit{motion\_detected}, a abertura de janela de leitura, o retorno do comando \textit{start\_reading} e o processamento de eventos \textit{tags\_read}. A terceira reúne aspectos não validados fisicamente neste trabalho, como sensor infravermelho real, antena de longo alcance, leitura simultânea em massa, alcance, acurácia e interferência. A Tabela \ref{tab:testes-funcionais} sintetiza os principais resultados da validação funcional, destacando a evidência obtida e a limitação associada a cada aspecto avaliado.
 
 \begin{table}[H]
 \centering
-\scriptsize
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{0.92}
-\caption{Cenários de validação funcional do protótipo}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\caption{Síntese da validação funcional do protótipo}
 \label{tab:testes-funcionais}
-\begin{tabular}{|p{3.2cm}|p{4.1cm}|p{4.1cm}|p{2.7cm}|}
-\hline
-\textbf{Cenário} & \textbf{Procedimento} & \textbf{Resultado esperado} & \textbf{Resultado observado} \\
-\hline
-Cadastro básico & Cadastrar local, leitor RFID e item patrimonial com a tag disponível no experimento. & Registros disponíveis para consulta e uso nos fluxos de leitura. & Validado funcionalmente na aplicação web e pela persistência dos registros. \\
-\hline
-Leitura válida & Ativar janela de leitura e aproximar a tag cadastrada do leitor de proximidade. & Sistema registra a leitura e atualiza o local físico conforme o leitor. & Validado fisicamente com leitor USB, comunicador intermediário e envio do evento à API. \\
-\hline
-Tag desconhecida & Enviar código de tag não cadastrado por simulação controlada na API. & Sistema registra evento e sinaliza inconsistência de tag desconhecida. & Verificado por teste funcional de software; validação física depende de nova tag ou massa de testes ampliada. \\
-\hline
-Local divergente & Associar o item a local lógico diferente do local vinculado ao leitor e aproximar a tag cadastrada. & Sistema identifica divergência entre localização lógica e física. & Validado funcionalmente pelo processamento da leitura e geração de inconsistência. \\
-\hline
-Duplicidade & Aproximar a mesma tag repetidamente do leitor em curto intervalo ou repetir o evento pela API. & Sistema ignora ou consolida leituras duplicadas conforme regra de deduplicação. & Verificado pela regra de deduplicação no processamento de leituras. \\
-\hline
-Auditoria & Executar janela de auditoria para um local utilizando a tag disponível no experimento. & Sistema classifica o item lido e permite identificar ausências conforme os itens cadastrados para o local. & Validado parcialmente com uma tag e verificado por testes funcionais para itens encontrados, ausentes e divergentes. \\
-\hline
-Leitor offline & Interromper o adaptador intermediário, desconectar o leitor ou simular ausência de ping. & Sistema bloqueia, sinaliza ou registra falha de comunicação sem comprometer os dados. & Verificado pelo controle de status do leitor e bloqueio de acionamento quando offline. \\
-\hline
-Acionamento por sensor & Simular evento \textit{motion\_detected} enviado por sensor ou gateway à API. & API abre janela de leitura e disponibiliza comando para a antena. & Verificado por teste funcional de software; sensor físico real não foi validado neste trabalho. \\
-\hline
-\end{tabular}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{3.6cm}}
+\toprule
+\textbf{Aspecto avaliado} & \textbf{Evidência de validação} & \textbf{Limitação} \\
+\midrule
+Cadastros e configuração & Teste funcional: locais, leitores e itens patrimoniais foram cadastrados e ficaram disponíveis para os fluxos de leitura. & Não envolve validação física de RFID. \\
+Leitura RFID USB & Validação física controlada: a tag de proximidade foi lida pelo leitor USB, capturada pelo comunicador intermediário e enviada à API. & Uso de uma tag e leitura por aproximação direta. \\
+Processamento do inventário & Teste funcional integrado: o evento \textit{tags\_read} foi processado, com registro de histórico e atualização do item. & Não mede acurácia, alcance ou taxa de leitura. \\
+Inconsistências e auditoria & Teste funcional: o sistema registrou situações como tag desconhecida, local divergente e itens ausentes em auditoria. & Validação física limitada pela quantidade de tags disponíveis. \\
+Fluxo sensor/gateway & Verificação por software: os eventos \textit{motion\_detected}, \textit{start\_reading} e \textit{tags\_read} foram tratados pela API. & Sensor físico e antena de longo alcance não foram testados. \\
+\bottomrule
+\end{tabularx}
 \end{table}
 \normalsize
 \renewcommand{\arraystretch}{1}

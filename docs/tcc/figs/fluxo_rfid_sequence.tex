@@ -1,47 +1,59 @@
 \begin{figure}[H]
 \centering
-\resizebox{\textwidth}{!}{
+\resizebox{0.94\textwidth}{!}{
 \begin{tikzpicture}[
     font=\scriptsize,
-    lane/.style={draw, rounded corners=3pt, align=center, minimum width=2.2cm, minimum height=0.7cm, fill=gray!8},
-    rfidstep/.style={draw, rounded corners=3pt, align=center, minimum width=2.5cm, minimum height=0.75cm, fill=white},
-    proto/.style={rfidstep, fill=green!10, draw=green!45!black},
-    future/.style={rfidstep, fill=orange!12, draw=orange!70!black},
-    api/.style={rfidstep, fill=blue!8, draw=blue!55},
-    arrow/.style={->, thick, >=latex},
-    dasharrow/.style={->, thick, dashed, >=latex}
+    participant/.style={draw, rounded corners=2pt, align=center, minimum width=1.8cm, minimum height=0.6cm, fill=gray!10},
+    msg/.style={->, >=latex, thick},
+    reply/.style={->, >=latex, thick, dashed},
+    lifeline/.style={dashed, gray!70},
+    altbox/.style={draw, rounded corners=3pt, fill opacity=0.18, text opacity=1},
+    labelbox/.style={draw, rounded corners=2pt, fill=white, align=center, font=\scriptsize},
+    process/.style={draw, rounded corners=2pt, align=center, fill=blue!8, draw=blue!55, minimum width=3.6cm, minimum height=0.7cm}
 ]
 
-\node[lane, fill=green!15] (vtitle) at (0,4.5) {Fluxo validado fisicamente};
-\node[proto] (usuario) at (0,3.35) {Usuario aciona\\ janela de leitura};
-\node[api] (api1) at (0,2.15) {API registra\\ janela ativa};
-\node[proto] (gateway) at (0,0.95) {Comunicador consulta\\ comando};
-\node[proto] (usb) at (0,-0.25) {Leitor USB recebe\\ UID da tag};
-\node[api] (tags1) at (0,-1.45) {Gateway envia\\ \textit{tags\_read}};
+\def\top{0}
+\def\bottom{-9.15}
 
-\draw[arrow] (usuario) -- (api1);
-\draw[arrow] (api1) -- node[right]{\textit{start\_reading}} (gateway);
-\draw[arrow] (gateway) -- (usb);
-\draw[arrow] (usb) -- (tags1);
+% Participantes principais
+\node[participant] (u) at (0,\top) {Usuario};
+\node[participant] (web) at (2.1,\top) {Sistema\\Web};
+\node[participant] (api) at (4.7,\top) {API REST /\\Middleware RFID};
+\node[participant] (gw) at (7.6,\top) {Comunicador\\Intermediario};
+\node[participant] (usb) at (10.0,\top) {Leitor\\RFID USB};
+\node[participant] (rede) at (12.6,\top) {Sensor/Leitor\\com rede};
 
-\node[lane, fill=orange!18] (ftitle) at (6.1,4.5) {Fluxo escalavel verificado por software};
-\node[future] (sensor) at (6.1,3.35) {Sensor ou gateway envia\\ \textit{motion\_detected}};
-\node[api] (api2) at (6.1,2.15) {API abre janela\\ da antena};
-\node[future] (antena) at (6.1,0.95) {Leitor conectado\\ recebe comando};
-\node[future] (rede) at (6.1,-0.25) {Antena captura\\ tags no ambiente};
-\node[api] (tags2) at (6.1,-1.45) {Dispositivo envia\\ \textit{tags\_read}};
+\foreach \x in {0,2.1,4.7,7.6,10.0,12.6}
+  \draw[lifeline] (\x,-0.45) -- (\x,\bottom);
 
-\draw[arrow] (sensor) -- (api2);
-\draw[arrow] (api2) -- node[right]{\textit{start\_reading}} (antena);
-\draw[arrow] (antena) -- (rede);
-\draw[arrow] (rede) -- (tags2);
+% Acionamento inicial pelo sistema web
+\draw[msg] (0,-0.9) -- node[above]{aciona leitura} (2.1,-0.9);
+\draw[msg] (2.1,-1.45) -- node[above]{solicita ativacao} (4.7,-1.45);
+\draw[reply] (4.7,-2.0) -- node[above]{janela ativa} (2.1,-2.0);
 
-\node[api, text width=4.8cm] (proc) at (3.05,-3.0) {Backend normaliza tags, remove duplicidades, valida janela, atualiza inventario, registra historico e inconsistencias};
-\draw[dasharrow] (tags1) -- (proc);
-\draw[dasharrow] (tags2) -- (proc);
+% Fluxo validado fisicamente
+\draw[altbox, fill=green!35, draw=green!45!black] (3.95,-2.45) rectangle (10.75,-5.65);
+\node[labelbox, draw=green!45!black] at (7.35,-2.62) {Fluxo validado fisicamente};
+\draw[msg] (7.6,-3.25) -- node[above]{consulta comando} (4.7,-3.25);
+\draw[reply] (4.7,-3.8) -- node[above]{\textit{start\_reading}} (7.6,-3.8);
+\draw[msg] (7.6,-4.35) -- node[above]{aguarda leitura} (10.0,-4.35);
+\draw[reply] (10.0,-4.9) -- node[above]{UID da tag} (7.6,-4.9);
+\draw[msg] (7.6,-5.45) -- node[above]{envia \textit{tags\_read}} (4.7,-5.45);
+
+% Fluxo escalavel previsto
+\draw[altbox, fill=orange!35, draw=orange!70!black] (3.95,-6.15) rectangle (13.35,-8.25);
+\node[labelbox, draw=orange!70!black] at (8.65,-6.32) {Fluxo escalavel previsto};
+\draw[msg] (12.6,-7.05) -- node[above]{envia \textit{motion\_detected}} (4.7,-7.05);
+\draw[reply] (4.7,-7.6) -- node[above]{\textit{start\_reading}} (12.6,-7.6);
+\draw[msg] (12.6,-8.1) -- node[above]{envia \textit{tags\_read}} (4.7,-8.1);
+
+% Processamento comum
+\node[process] (proc) at (4.7,-8.8) {processa leitura\\e atualiza inventario};
+\draw[msg] (4.7,-8.3) -- (proc.north);
 
 \end{tikzpicture}
 }
+\vspace{0.3em}
 \caption{Fluxo de eventos RFID suportado pela arquitetura}
 \label{fig:fluxo-eventos-rfid}
 \end{figure}

@@ -19,6 +19,65 @@ Na validação prática, utilizou-se um computador pessoal, um leitor RFID de pr
 
 O comunicador intermediário também amplia a compatibilidade da solução, pois atua como um gateway local entre dispositivos simples e a API REST. Dessa forma, leitores USB que operam como teclado, dispositivos equivalentes a leitores de código de barras ou periféricos sem rede podem ser integrados ao sistema sem alterar as regras centrais do backend. Por outro lado, dispositivos com Wi-Fi ou Ethernet podem enviar eventos diretamente à API, desde que respeitem o formato esperado. A escolha do hardware de baixo custo foi orientada por disponibilidade e viabilidade experimental, permitindo validar o pipeline lógico do sistema sem restringir a arquitetura a esse tipo de leitor. Essa decisão também considera que a implantação física de RFID envolve variáveis específicas de ambiente e interferência, que demandam experimentos próprios para avaliação de desempenho \cite{knapp2022,ting2013}.
 
+\section{Requisitos e modelagem funcional}
+
+O levantamento de requisitos foi orientado pelo problema de controle patrimonial do colegiado e pelas funcionalidades necessárias para validar o fluxo computacional de inventário com RFID. Os requisitos funcionais representam comportamentos diretamente observáveis no sistema, enquanto os requisitos não funcionais registram propriedades esperadas da solução, como rastreabilidade, extensibilidade e compatibilidade com diferentes dispositivos de captura.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.12}
+\caption{Requisitos funcionais do protótipo}
+\label{tab:requisitos-funcionais}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{1.5cm}>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Código} & \textbf{Descrição} \\
+\midrule
+RF01 & Permitir autenticação de usuário para acesso às funcionalidades administrativas do sistema. \\
+RF02 & Permitir o cadastro, edição, remoção e consulta de locais físicos do colegiado. \\
+RF03 & Permitir o cadastro, edição, remoção e consulta de leitores RFID, associando cada leitor a um local e a um tipo de operação. \\
+RF04 & Permitir o cadastro, edição, remoção e consulta de itens patrimoniais associados a etiquetas RFID. \\
+RF05 & Permitir o acionamento de janelas de leitura ou auditoria para leitores RFID cadastrados. \\
+RF06 & Receber eventos RFID por interface padronizada, incluindo eventos \textit{motion\_detected} e \textit{tags\_read}. \\
+RF07 & Processar leituras RFID, validar tags, tratar duplicidades e atualizar o local físico dos itens quando aplicável. \\
+RF08 & Registrar histórico operacional das leituras, movimentações, auditorias e alterações relevantes. \\
+RF09 & Identificar e registrar inconsistências, como local divergente, item não encontrado e tag desconhecida. \\
+RF10 & Permitir a consulta do inventário, do log operacional, das auditorias e das inconsistências registradas. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.12}
+\caption{Requisitos não funcionais do protótipo}
+\label{tab:requisitos-nao-funcionais}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{1.5cm}>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Código} & \textbf{Descrição} \\
+\midrule
+RNF01 & A solução deve manter rastreabilidade das operações por meio de registros históricos e logs consultáveis. \\
+RNF02 & A arquitetura deve ser extensível para permitir integração futura com sensores de presença, leitores com rede e antenas RFID de maior alcance. \\
+RNF03 & A API deve aceitar eventos de dispositivos heterogêneos por meio de formato padronizado de comunicação. \\
+RNF04 & O sistema deve permitir integração com leitores simples, como dispositivos USB que operam como teclado, por meio de comunicador intermediário. \\
+RNF05 & O backend deve proteger rotas administrativas por autenticação e eventos RFID por token de ingestão. \\
+RNF06 & A interface deve organizar cadastros, consultas, auditorias e inconsistências de forma compreensível para uso operacional. \\
+RNF07 & A validação física do protótipo deve ser delimitada ao hardware disponível, sem generalizar métricas de alcance, acurácia ou leitura simultânea. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+A Figura \ref{fig:casos-uso-rfid} apresenta os principais casos de uso funcionais do protótipo. Os requisitos não funcionais não são representados como casos de uso, pois descrevem atributos de qualidade e restrições da solução, sendo por isso apresentados em tabela própria.
+
+\input{figs/casos_uso_rfid.tex}
+
+A Figura \ref{fig:fluxo-atividade-rfid} complementa a modelagem ao apresentar o fluxograma geral de processamento de eventos RFID. O fluxograma evidencia a existência de dois caminhos de acionamento: o caminho validado fisicamente com leitor USB de proximidade e o caminho escalável, verificado por software, no qual um sensor ou gateway envia evento de presença para abertura da janela de leitura.
+
+\input{figs/fluxo_atividade_rfid.tex}
+
 \section{Arquitetura proposta}
 
 A arquitetura da solução foi organizada em camadas. A primeira camada corresponde à interface web, responsável pela interação com o usuário. Nela são realizados cadastros de locais, leitores RFID e itens patrimoniais, além da consulta de patrimônio, auditoria, inconsistências e log operacional.

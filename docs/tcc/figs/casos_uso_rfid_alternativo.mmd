@@ -1,0 +1,65 @@
+usecaseDiagram
+    %% Atores
+    actor "Usuário/Administrador" as Usuario
+    actor "Comunicador Intermediário" as Comunicador
+    actor "Sensor/Leitor com Rede" as Sensor
+
+    %% Casos de Uso do Usuário
+    usecase "Gerenciar Cadastros" as UC1
+    usecase "Consultar Inventário" as UC2
+    usecase "Iniciar Leitura" as UC3
+    usecase "Executar Auditoria" as UC4
+    usecase "Analisar Inconsistências" as UC5
+    usecase "Consultar Histórico Operacional" as UC6
+
+    %% Casos Internos do Sistema
+    usecase "Abrir Janela de Leitura" as UC7
+    usecase "Verificar Janela Ativa" as UC8
+    usecase "Processar Leitura RFID" as UC9
+    usecase "Validar Tags" as UC10
+    usecase "Registrar Leitura" as UC11
+    usecase "Atualizar Inventário" as UC12
+    usecase "Registrar Histórico Operacional" as UC13
+    usecase "Registrar Inconsistência" as UC14
+
+    %% Casos de Dispositivos
+    usecase "Consultar Comando de Leitura" as UC15
+    usecase "Receber Evento RFID" as UC16
+    usecase "Receber Evento de Presença" as UC17
+    usecase "Receber Leitura de Tags" as UC18
+    usecase "Enviar Resposta ao Dispositivo" as UC19
+
+    %% Associações (ator --> caso)
+    Usuario --> UC1
+    Usuario --> UC2
+    Usuario --> UC3
+    Usuario --> UC4
+    Usuario --> UC5
+    Usuario --> UC6
+
+    Comunicador --> UC15
+    Comunicador --> UC18
+    Comunicador --> UC19
+    Sensor --> UC17
+    Sensor --> UC18
+    Sensor --> UC19
+
+    %% Especializações
+    UC17 ..|> UC16 : especialização
+    UC18 ..|> UC16 : especialização
+
+    %% Includes (obrigatórios)
+    UC3 ..> UC7 : include
+    UC4 ..> UC7 : include
+    UC17 ..> UC7 : include
+    UC18 ..> UC8 : include
+    UC8 ..> UC9 : include
+    UC9 ..> UC10 : include
+    UC9 ..> UC11 : include
+    UC9 ..> UC13 : include
+    UC9 ..> UC19 : include
+
+    %% Extends (condicionais)
+    UC10 ..|> UC14 : extend (se falha)
+    UC11 ..|> UC12 : extend (se registrada)</content>
+<parameter name="filePath">c:\Users\ezekl\OneDrive\Desktop\InventoryRFID\docs\tcc\figs\casos_uso_rfid_alternativo.mmd

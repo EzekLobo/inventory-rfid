@@ -1,55 +1,25 @@
 sequenceDiagram
     actor Usuario as Usuario
-    participant Frontend as Sistema Web
+    participant Web as Sistema Web
     participant API as API REST / Middleware RFID
-    participant Processor as RFIDEventProcessor
-    participant DB as Banco de Dados
     participant Gateway as Comunicador Intermediario
     participant USB as Leitor RFID USB
-    participant Sensor as Sensor/Gateway com rede
-    participant Antena as Leitor/Antena RFID com rede
+    participant Rede as Sensor/Leitor com rede
 
-    Usuario->>Frontend: aciona sincronizacao ou auditoria
-    Frontend->>API: POST /api/antenas/{id}/ativar ou /auditar
-    API->>DB: registra antena ativa e janela de leitura
-    API-->>Frontend: retorna janela ativa
+    Usuario->>Web: aciona janela de leitura
+    Web->>API: solicita ativacao da leitura
+    API-->>Web: confirma janela ativa
 
-    alt Fluxo validado: leitor USB de proximidade
-        loop Consulta de comando
-            Gateway->>API: GET /api/eventos/rfid/comando/?antenna_id={id}
-            API->>DB: atualiza ping e consulta janela ativa
-            API-->>Gateway: idle ou start_reading
-        end
-
-        Gateway->>USB: aguarda leitura local
-        USB-->>Gateway: UID da tag como entrada de teclado
-        Gateway->>API: POST /api/eventos/rfid/ tags_read
-    else Fluxo escalavel: sensor/leitor conectado
-        Sensor->>API: POST /api/eventos/rfid/ motion_detected
-        API->>Processor: process_motion_detected()
-        Processor->>DB: abre janela de leitura da antena
-        API-->>Sensor: comando de janela ativa
-
-        Antena->>API: POST /api/eventos/rfid/ tags_read
+    alt Fluxo validado fisicamente
+        Gateway->>API: consulta comando
+        API-->>Gateway: start_reading
+        Gateway->>USB: aguarda leitura
+        USB-->>Gateway: UID da tag
+        Gateway->>API: envia tags_read
+    else Fluxo escalavel previsto
+        Rede->>API: envia motion_detected
+        API-->>Rede: start_reading
+        Rede->>API: envia tags_read
     end
 
-    API->>Processor: process_tags_read()
-    Processor->>DB: normaliza, deduplica e registra leitura
-
-    alt Tag cadastrada em leitor de destino
-        Processor->>DB: atualiza local fisico do item
-        Processor->>DB: registra movimentacao na timeline
-    else Tag desconhecida
-        Processor->>DB: registra inconsistencia de tag desconhecida
-    else Janela expirada sem auditoria
-        Processor-->>API: ignora leitura fora da janela
-    end
-
-    alt Local logico diferente do fisico
-        Processor->>DB: registra inconsistencia de local
-    else Local reconciliado
-        Processor->>DB: resolve inconsistencia aberta
-    end
-
-    API-->>Frontend: disponibiliza patrimonio, historico e inconsistencias
-    Usuario->>Frontend: consulta resultado
+    API->>API: processa leitura e atualiza inventario

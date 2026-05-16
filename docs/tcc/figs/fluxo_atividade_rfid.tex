@@ -1,0 +1,76 @@
+\begin{figure}[H]
+\centering
+\usetikzlibrary{calc}
+\resizebox{0.96\textwidth}{!}{
+\begin{tikzpicture}[
+    font=\scriptsize,
+    terminal/.style={draw, ellipse, align=center, minimum width=3.2cm, minimum height=0.75cm, fill=gray!8},
+    process/.style={draw, rectangle, align=center, minimum width=3.55cm, minimum height=0.78cm, fill=blue!6},
+    alert/.style={draw, rectangle, align=center, minimum width=3.75cm, minimum height=0.78cm, fill=red!7},
+    arrow/.style={->, >=latex, thick},
+    note/.style={align=center, font=\scriptsize}
+]
+
+\newcommand{\decisionnode}[4]{%
+    \node[inner sep=0pt, minimum width=3.0cm, minimum height=1.45cm] (#1) at (#2,#3) {};
+    \draw[fill=yellow!15] ($(#1)+(0,0.72)$) -- ($(#1)+(1.5,0)$) --
+        ($(#1)+(0,-0.72)$) -- ($(#1)+(-1.5,0)$) -- cycle;
+    \node[align=center, text width=2.05cm] at (#1) {#4};
+}
+
+\newcommand{\ionode}[4]{%
+    \node[inner sep=0pt, minimum width=3.8cm, minimum height=0.82cm] (#1) at (#2,#3) {};
+    \draw[fill=green!7] ($(#1)+(-1.55,0.41)$) -- ($(#1)+(1.9,0.41)$) --
+        ($(#1)+(1.55,-0.41)$) -- ($(#1)+(-1.9,-0.41)$) -- cycle;
+    \node[align=center] at (#1) {#4};
+}
+
+\node[terminal] (inicio) at (0,0) {Início};
+\decisionnode{origem}{0}{-1.35}{Origem do\\acionamento?}
+
+\node[process] (usuario) at (-3.85,-2.95) {Usuário aciona\\leitura ou auditoria};
+\ionode{sensor}{3.85}{-2.95}{Sensor/gateway envia\\\textit{motion\_detected}}
+
+\node[process] (janela) at (0,-4.25) {API abre janela\\de leitura};
+\ionode{start}{0}{-5.55}{Dispositivo recebe\\\textit{start\_reading}}
+\node[process] (captura) at (0,-6.85) {Leitor captura UID\\da tag RFID};
+\ionode{tags}{0}{-8.15}{Dispositivo envia\\\textit{tags\_read}}
+\node[process] (processa) at (0,-9.45) {API processa leitura\\e valida tag};
+\decisionnode{tag}{0}{-10.95}{Tag\\cadastrada?}
+
+\node[process] (atualiza) at (-3.85,-12.55) {Atualiza local físico\\e registra leitura};
+\node[alert] (desconhecida) at (3.85,-12.55) {Registra inconsistência\\de tag desconhecida};
+\decisionnode{local}{-3.85}{-14.05}{Local\\diverge?}
+\node[alert] (divergencia) at (-6.8,-15.65) {Registra inconsistência\\de local};
+\node[process] (resolve) at (-0.9,-15.65) {Mantém ou resolve\\inconsistência aberta};
+\node[process, minimum width=4.25cm] (historico) at (0,-17.1) {Registra histórico, log\\e resultado de auditoria};
+\node[terminal, minimum width=4.2cm] (fim) at (0,-18.4) {Fim: inventário\\disponível para consulta};
+
+\draw[arrow] (inicio) -- (origem.north);
+\draw[arrow] (origem.west) -- node[above, sloped]{validado fisicamente} (usuario.north);
+\draw[arrow] (origem.east) -- node[above, sloped]{escalável} (sensor.north);
+\draw[arrow] (usuario.south) |- (janela.west);
+\draw[arrow] (sensor.south) |- (janela.east);
+\draw[arrow] (janela) -- (start);
+\draw[arrow] (start) -- (captura);
+\draw[arrow] (captura) -- (tags);
+\draw[arrow] (tags) -- (processa);
+\draw[arrow] (processa) -- (tag.north);
+\draw[arrow] (tag.west) -- node[above, sloped]{sim} (atualiza.north);
+\draw[arrow] (tag.east) -- node[above, sloped]{não} (desconhecida.north);
+\draw[arrow] (atualiza) -- (local.north);
+\draw[arrow] (local.west) -- node[above, sloped]{sim} (divergencia.north);
+\draw[arrow] (local.east) -- node[above, sloped]{não} (resolve.north);
+\draw[arrow] (divergencia.south) |- (historico.west);
+\draw[arrow] (resolve.south) -- (historico.north);
+\draw[arrow] (desconhecida.south) |- (historico.east);
+\draw[arrow] (historico) -- (fim);
+
+\node[note] at (-5.75,-4.25) {Fluxo com leitor USB\\e comunicador intermediário};
+\node[note] at (5.75,-4.25) {Fluxo com sensor/leitor\\verificado por software};
+
+\end{tikzpicture}
+}
+\caption{Fluxograma geral para processamento de eventos RFID}
+\label{fig:fluxo-atividade-rfid}
+\end{figure}

@@ -1,0 +1,104 @@
+\begin{figure}[H]
+\centering
+\usetikzlibrary{shapes.geometric,arrows.meta}
+\resizebox{0.98\textwidth}{!}{%
+\begin{tikzpicture}[
+    font=\scriptsize,
+    usecase/.style={draw, ellipse, align=center, minimum width=2.70cm, minimum height=0.68cm, fill=blue!5},
+    devicecase/.style={draw, ellipse, align=center, minimum width=2.80cm, minimum height=0.68cm, fill=green!6},
+    internalcase/.style={draw, ellipse, align=center, minimum width=2.60cm, minimum height=0.66cm, fill=yellow!10},
+    exceptioncase/.style={draw, ellipse, align=center, minimum width=2.80cm, minimum height=0.66cm, fill=red!7},
+    conditionalcase/.style={draw, ellipse, align=center, minimum width=2.80cm, minimum height=0.66cm, fill=orange!10},
+    system/.style={draw, rounded corners=3pt, fill=gray!4},
+    assoc/.style={-, semithick, gray!62},
+    include/.style={dashed, -{Stealth[length=2.1mm,width=1.5mm]}, semithick, gray!72},
+    extend/.style={dashed, -{Stealth[length=2.1mm,width=1.5mm]}, semithick, red!65!black},
+    generalize/.style={-{Triangle[open,length=3.0mm,width=3.2mm]}, semithick, gray!72},
+    legend/.style={draw, rounded corners=2pt, fill=white, align=left, font=\tiny, inner sep=2pt, text width=5.80cm}
+]
+
+\newcommand{\umlactor}[3]{%
+    \draw (#1,#2+0.34) circle (0.095);
+    \draw (#1,#2+0.24) -- (#1,#2-0.17);
+    \draw (#1-0.23,#2+0.08) -- (#1+0.23,#2+0.08);
+    \draw (#1,#2-0.17) -- (#1-0.20,#2-0.47);
+    \draw (#1,#2-0.17) -- (#1+0.20,#2-0.47);
+    \node[align=center] at (#1,#2-0.76) {#3};
+}
+
+% Limite do sistema
+\draw[system] (0.65,0.90) rectangle (16.25,-12.35);
+\node[font=\small\bfseries] at (8.40,0.55) {Sistema Web de Inventario RFID};
+
+% Atores externos
+\umlactor{-0.35}{-5.40}{Usuario/\\Administrador}
+\umlactor{17.55}{-0.95}{Comunicador\\intermediario}
+\umlactor{17.55}{-6.20}{Sensor/Leitor\\com rede}
+
+% Objetivos do usuario
+\node[usecase] (cadastros) at (2.55,-0.75) {Gerenciar\\cadastros};
+\node[usecase] (consultar) at (2.55,-1.95) {Consultar\\inventario};
+\node[usecase] (iniciar) at (2.55,-3.15) {Iniciar\\leitura};
+\node[usecase] (auditoria) at (2.55,-4.35) {Executar\\auditoria};
+\node[usecase] (inconsistencias) at (2.55,-8.85) {Analisar\\inconsistencias};
+\node[usecase] (historico) at (2.55,-10.05) {Consultar historico\\operacional};
+
+% Comportamentos internos do sistema
+\node[internalcase] (janela) at (6.05,-3.55) {Abrir janela\\de leitura};
+\node[internalcase, minimum width=2.75cm] (verificarJanela) at (6.30,-5.35) {Verificar janela\\ativa};
+\node[internalcase, minimum width=2.80cm] (processar) at (8.55,-6.55) {Processar leitura\\RFID};
+\node[internalcase] (validar) at (5.50,-7.25) {Validar\\tags};
+\node[internalcase] (registrar) at (8.55,-8.10) {Registrar\\leitura};
+\node[conditionalcase] (atualizar) at (6.55,-10.10) {Atualizar\\inventario};
+\node[conditionalcase, minimum width=3.05cm] (registrarHist) at (10.30,-10.15) {Registrar historico\\operacional};
+\node[exceptioncase] (registrarInc) at (12.10,-7.85) {Registrar\\inconsistencia};
+
+% Casos de uso acionados por dispositivos
+\node[devicecase, minimum width=3.05cm] (comando) at (12.40,-0.90) {Consultar comando\\de leitura};
+\node[devicecase] (evento) at (12.40,-2.35) {Receber evento\\RFID};
+\node[devicecase, minimum width=3.05cm] (presenca) at (10.65,-3.75) {Receber evento\\de presenca};
+\node[devicecase, minimum width=3.05cm] (leituraTags) at (14.00,-5.10) {Receber leitura\\de tags};
+\node[devicecase, minimum width=3.05cm] (resposta) at (14.00,-9.00) {Enviar resposta\\ao dispositivo};
+
+% Associacoes do usuario
+\foreach \uc in {cadastros,consultar,iniciar,auditoria,inconsistencias,historico}
+  \draw[assoc] (-0.35,-5.40) -- (\uc.west);
+
+% Associacoes dos dispositivos
+\draw[assoc] (17.55,-0.95) -- (comando.east);
+\draw[assoc] (17.55,-0.95) -- (leituraTags.east);
+\draw[assoc] (17.55,-6.20) -- (leituraTags.east);
+\draw[assoc] (17.55,-6.20) -- ++(-0.40,0) |- (presenca.east);
+\draw[assoc] (resposta.west) -- (17.55,-0.95);
+\draw[assoc] (resposta.west) -- (17.55,-6.20);
+
+% Relacionamentos UML
+\draw[include] (iniciar.east) -- (janela.west);
+\draw[include] (auditoria.east) -- (janela.west);
+\draw[include] (presenca.west) -- (janela.east);
+
+\draw[generalize] (presenca.north east) -- (evento.south west);
+\draw[generalize] (leituraTags.north west) -- (evento.south east);
+
+\draw[include] (leituraTags.west) -- (verificarJanela.east);
+\draw[include] (verificarJanela.south east) -- (processar.north west);
+\draw[include] (processar.south west) -- (validar.north east);
+\draw[include] (processar.south) -- (registrar.north);
+\draw[extend] (atualizar.north east) -- (registrar.south west);
+\draw[include] (processar.south east) -- (registrarHist.north);
+\draw[extend] (registrarInc.west) -- (validar.east);
+\draw[include] (processar.south) -- (resposta.north);
+
+\node[legend] at (12.35,-11.62) {
+    Continua: associacao ator--caso de uso\\
+    Triangulo aberto: especializacao\\
+    Tracejada cinza: \textless\textless include\textgreater\textgreater{} obrigatorio\\
+    Tracejada vermelha: \textcolor{red!65!black}{\textless\textless extend\textgreater\textgreater{} condicional}\\
+    Cond.: janela/auditoria; validacao falha; historico; inconsistencia
+};
+
+\end{tikzpicture}
+}
+\caption{Diagrama de casos de uso do sistema de inventario RFID}
+\label{fig:casos-uso-rfid}
+\end{figure}
