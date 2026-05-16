@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Cpu, LogIn, LogOut, Menu, RadioTower, Settings, ShieldCheck } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import type { CurrentUser } from "@/lib/types";
 
 const navItems = [
   { href: "/", label: "Início" },
@@ -20,15 +21,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
+  const [user, setUser] = useState<CurrentUser | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
+    setUser(api.currentUser());
     setAuthenticated(api.isAuthenticated());
     setCheckingAuth(false);
   }, []);
 
   function handleLogout() {
     api.logout();
+    setUser(null);
     setAuthenticated(false);
     setOpen(false);
   }
@@ -38,7 +42,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (!authenticated) {
-    return <LoginScreen onAuthenticated={() => setAuthenticated(true)} />;
+    return <LoginScreen onAuthenticated={() => {
+      setUser(api.currentUser());
+      setAuthenticated(true);
+    }} />;
   }
 
   return (
@@ -59,7 +66,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </button>
 
         <nav className={open ? "nav nav-open" : "nav"}>
-          {navItems.map((item) => {
+          {navItems.filter((item) => item.href !== "/log" || user?.permissions.ver_logs).map((item) => {
             const active = pathname === item.href;
             return (
               <Link
@@ -74,7 +81,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
-          <button className="nav-action" type="button" onClick={handleLogout}>
+          <button className="nav-action" type="button" onClick={handleLogout} title={user ? `${user.username} | ${user.perfil}` : undefined}>
             <LogOut size={17} />
             Sair
           </button>
