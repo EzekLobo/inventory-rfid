@@ -85,9 +85,22 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   })
     .then(async (response) => {
       const text = await response.text();
-      const data = text ? JSON.parse(text) : null;
+      let data: unknown = null;
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = text;
+        }
+      }
       if (!response.ok) {
-        const detail = data?.detail || data?.non_field_errors?.[0] || "Falha na comunicacao com a API.";
+        if (response.status === 401 && typeof window !== "undefined") {
+          window.localStorage.removeItem(AUTH_KEY);
+          window.localStorage.removeItem(USER_KEY);
+        }
+        const detail = typeof data === "object" && data !== null
+          ? (data as any).detail || (data as any).non_field_errors?.[0]
+          : String(data || "Falha na comunicacao com a API.");
         throw new Error(String(detail));
       }
       return data as T;

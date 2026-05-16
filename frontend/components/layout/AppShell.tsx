@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Cpu, LogIn, LogOut, Menu, RadioTower, Settings, ShieldCheck } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
-import { api } from "@/lib/api";
-import type { CurrentUser } from "@/lib/types";
+import { FormEvent, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 const navItems = [
   { href: "/", label: "Início" },
@@ -20,32 +19,14 @@ const navItems = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [authenticated, setAuthenticated] = useState(false);
-  const [user, setUser] = useState<CurrentUser | null>(null);
-  const [checkingAuth, setCheckingAuth] = useState(true);
+  const { authenticated, loading, logout, user } = useAuth();
 
-  useEffect(() => {
-    setUser(api.currentUser());
-    setAuthenticated(api.isAuthenticated());
-    setCheckingAuth(false);
-  }, []);
-
-  function handleLogout() {
-    api.logout();
-    setUser(null);
-    setAuthenticated(false);
-    setOpen(false);
-  }
-
-  if (checkingAuth) {
+  if (loading) {
     return <div className="boot-screen">Inicializando console RFID</div>;
   }
 
   if (!authenticated) {
-    return <LoginScreen onAuthenticated={() => {
-      setUser(api.currentUser());
-      setAuthenticated(true);
-    }} />;
+    return <LoginScreen />;
   }
 
   return (
@@ -81,7 +62,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
-          <button className="nav-action" type="button" onClick={handleLogout} title={user ? `${user.username} | ${user.perfil}` : undefined}>
+          <button className="nav-action" type="button" onClick={logout} title={user ? `${user.username} | ${user.perfil}` : undefined}>
             <LogOut size={17} />
             Sair
           </button>
@@ -101,7 +82,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function LoginScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
+function LoginScreen() {
+  const { login } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -113,8 +95,7 @@ function LoginScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
     setError("");
 
     try {
-      await api.login(username, password);
-      onAuthenticated();
+      await login(username, password);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao acessar.");
     } finally {

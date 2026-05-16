@@ -14,7 +14,8 @@ import {
   ShieldQuestion
 } from "lucide-react";
 import { api } from "@/lib/api";
-import type { CurrentUser, Inconsistencia, ItemPatrimonial, Local, PaginatedResponse } from "@/lib/types";
+import { useAuth } from "@/context/AuthContext";
+import type { Inconsistencia, ItemPatrimonial, Local, PaginatedResponse } from "@/lib/types";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/DataState";
 import { PaginationControls } from "@/components/ui/PaginationControls";
 
@@ -51,7 +52,7 @@ type AuditGroup = {
 
 export default function InconsistenciasPage() {
   const [data, setData] = useState<Inconsistencia[]>([]);
-  const [currentUser] = useState<CurrentUser | null>(() => api.currentUser());
+  const { user: currentUser } = useAuth();
   const [pageData, setPageData] = useState<PaginatedResponse<Inconsistencia> | null>(null);
   const [locais, setLocais] = useState<Local[]>([]);
   const [itens, setItens] = useState<ItemPatrimonial[]>([]);

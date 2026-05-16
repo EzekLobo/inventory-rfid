@@ -3,13 +3,13 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, ChevronDown, ChevronRight, HelpCircle, Play, RefreshCw, Send, ShieldAlert } from "lucide-react";
 import { api } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import type {
   Antena,
   AuditoriaItemResumo,
   AuditoriaJob,
   AuditoriaMetadados,
   AuditoriaProcessada,
-  CurrentUser,
   ItemPatrimonial,
   TagsReadResponse
 } from "@/lib/types";
@@ -90,7 +90,7 @@ function HelpTip({ text }: { text: string }) {
 
 export default function AuditoriaPage() {
   const [antenas, setAntenas] = useState<Antena[]>([]);
-  const [currentUser] = useState<CurrentUser | null>(() => api.currentUser());
+  const { user: currentUser } = useAuth();
   const [selectedAntennaIds, setSelectedAntennaIds] = useState<number[]>([]);
   const [auditAll, setAuditAll] = useState(true);
   const [selectorOpen, setSelectorOpen] = useState(false);

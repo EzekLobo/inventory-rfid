@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Antenna, Box, Building2, KeyRound, Pencil, Plus, RefreshCw, Save, Settings, ShieldCheck, Trash2, UserCog, X } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import type { Antena, CurrentUser, ItemPatrimonial, Local, Usuario, UserPermissions } from "@/lib/types";
 import { ErrorState, LoadingState } from "@/components/ui/DataState";
@@ -40,7 +41,7 @@ const sections = [
 ];
 
 export default function ConfiguracoesPage() {
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const { user: currentUser } = useAuth();
   const [section, setSection] = useState<Section>("senha");
   const [locais, setLocais] = useState<Local[]>([]);
   const [antenas, setAntenas] = useState<Antena[]>([]);
@@ -63,15 +64,18 @@ export default function ConfiguracoesPage() {
 
   async function load() {
     setError("");
+    if (!currentUser) {
+      setError("Usuário não autenticado.");
+      setLoading(false);
+      return;
+    }
     try {
-      const user = await api.me();
-      setCurrentUser(user);
       const [locaisData, antenasData, itensData, usuariosData, permissoesData] = await Promise.all([
         api.listLocais({ page_size: 100 }),
         api.listAntenas({ page_size: 100 }),
         api.listItens({ page_size: 100 }),
-        user.is_admin ? api.listUsuarios({ page_size: 100 }) : Promise.resolve(null),
-        user.is_admin ? api.listPermissoesTecnico() : Promise.resolve(null)
+        currentUser.is_admin ? api.listUsuarios({ page_size: 100 }) : Promise.resolve(null),
+        currentUser.is_admin ? api.listPermissoesTecnico() : Promise.resolve(null)
       ]);
       setLocais(locaisData.results);
       setAntenas(antenasData.results);

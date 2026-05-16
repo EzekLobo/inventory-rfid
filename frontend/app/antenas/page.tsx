@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { Play, Radar, RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
-import type { AcionamentoResponse, Antena, CurrentUser } from "@/lib/types";
+import { useAuth } from "@/context/AuthContext";
+import type { AcionamentoResponse, Antena } from "@/lib/types";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/DataState";
 
 type ActiveProcess = {
@@ -20,7 +21,7 @@ function commandLabel(command: AcionamentoResponse) {
 
 export default function AntenasPage() {
   const [antenas, setAntenas] = useState<Antena[]>([]);
-  const [currentUser] = useState<CurrentUser | null>(() => api.currentUser());
+  const { user: currentUser } = useAuth();
   const [duracao, setDuracao] = useState(5);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
