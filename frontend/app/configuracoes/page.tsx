@@ -1,17 +1,19 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Antenna, Box, Building2, Pencil, Plus, RefreshCw, Save, Settings, Trash2, X } from "lucide-react";
+import { Antenna, Box, Building2, KeyRound, Pencil, Plus, RefreshCw, Save, Settings, ShieldCheck, Trash2, UserCog, X } from "lucide-react";
 import { api } from "@/lib/api";
-import type { Antena, ItemPatrimonial, Local } from "@/lib/types";
+import type { Antena, CurrentUser, ItemPatrimonial, Local, Usuario, UserPermissions } from "@/lib/types";
 import { ErrorState, LoadingState } from "@/components/ui/DataState";
 
-type Section = "locais" | "leitores" | "itens";
+type Section = "senha" | "locais" | "leitores" | "itens" | "usuarios" | "permissoes";
 type LocalForm = Omit<Local, "id">;
 type AntenaForm = Pick<Antena, "nome" | "hardware_id" | "local_id" | "tipo" | "modo_comando" | "command_url" | "duracao_padrao_segundos"> & {
   command_token?: string;
 };
 type ItemForm = Pick<ItemPatrimonial, "nome" | "tag_id" | "local_logico_id" | "local_fisico_id" | "ativo">;
+type PasswordForm = { senha_atual: string; nova_senha: string };
+type UserForm = Pick<Usuario, "username" | "first_name" | "last_name" | "email" | "is_active" | "is_staff"> & { password: string };
 
 const emptyLocal: LocalForm = { nome: "", codigo: "" };
 const emptyAntena: AntenaForm = {
@@ -25,40 +27,58 @@ const emptyAntena: AntenaForm = {
   duracao_padrao_segundos: 5
 };
 const emptyItem: ItemForm = { nome: "", tag_id: "", local_logico_id: null, local_fisico_id: null, ativo: true };
+const emptyPassword: PasswordForm = { senha_atual: "", nova_senha: "" };
+const emptyUser: UserForm = { username: "", password: "", first_name: "", last_name: "", email: "", is_active: true, is_staff: false };
 
 const sections = [
+  { id: "senha" as const, label: "Senha", icon: KeyRound },
   { id: "locais" as const, label: "Locais", icon: Building2 },
   { id: "leitores" as const, label: "Leitores", icon: Antenna },
-  { id: "itens" as const, label: "Itens", icon: Box }
+  { id: "itens" as const, label: "Itens", icon: Box },
+  { id: "usuarios" as const, label: "Usuarios", icon: UserCog, adminOnly: true },
+  { id: "permissoes" as const, label: "Permissoes", icon: ShieldCheck, adminOnly: true }
 ];
 
 export default function ConfiguracoesPage() {
-  const [section, setSection] = useState<Section>("locais");
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [section, setSection] = useState<Section>("senha");
   const [locais, setLocais] = useState<Local[]>([]);
   const [antenas, setAntenas] = useState<Antena[]>([]);
   const [itens, setItens] = useState<ItemPatrimonial[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [permissoes, setPermissoes] = useState<UserPermissions | null>(null);
   const [localForm, setLocalForm] = useState<LocalForm>(emptyLocal);
   const [antenaForm, setAntenaForm] = useState<AntenaForm>(emptyAntena);
   const [itemForm, setItemForm] = useState<ItemForm>(emptyItem);
+  const [passwordForm, setPasswordForm] = useState<PasswordForm>(emptyPassword);
+  const [userForm, setUserForm] = useState<UserForm>(emptyUser);
   const [editingLocalId, setEditingLocalId] = useState<number | null>(null);
   const [editingAntenaId, setEditingAntenaId] = useState<number | null>(null);
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [editingUserId, setEditingUserId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   async function load() {
     setError("");
     try {
-      const [locaisData, antenasData, itensData] = await Promise.all([
-        api.listLocais(),
-        api.listAntenas(),
-        api.listItens()
+      const user = await api.me();
+      setCurrentUser(user);
+      const [locaisData, antenasData, itensData, usuariosData, permissoesData] = await Promise.all([
+        api.listLocais({ page_size: 100 }),
+        api.listAntenas({ page_size: 100 }),
+        api.listItens({ page_size: 100 }),
+        user.is_admin ? api.listUsuarios({ page_size: 100 }) : Promise.resolve(null),
+        user.is_admin ? api.listPermissoesTecnico() : Promise.resolve(null)
       ]);
-      setLocais(locaisData);
-      setAntenas(antenasData);
-      setItens(itensData);
-      setAntenaForm((current) => ({ ...current, local_id: current.local_id || locaisData[0]?.id || 0 }));
+      setLocais(locaisData.results);
+      setAntenas(antenasData.results);
+      setItens(itensData.results);
+      setUsuarios(usuariosData?.results || []);
+      setPermissoes(permissoesData);
+      setAntenaForm((current) => ({ ...current, local_id: current.local_id || locaisData.results[0]?.id || 0 }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível carregar configurações.");
     } finally {
@@ -71,6 +91,8 @@ export default function ConfiguracoesPage() {
   }, []);
 
   const localNameById = useMemo(() => new Map(locais.map((local) => [local.id, local.nome])), [locais]);
+  const visibleSections = sections.filter((item) => !item.adminOnly || currentUser?.is_admin);
+  const canManageCadastros = Boolean(currentUser?.permissions.gerenciar_cadastros);
 
   async function saveLocal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -99,6 +121,7 @@ export default function ConfiguracoesPage() {
   async function persist(action: () => Promise<void>, failureMessage: string) {
     setBusy(true);
     setError("");
+    setSuccess("");
     try {
       await action();
       await load();
@@ -107,6 +130,47 @@ export default function ConfiguracoesPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function savePassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!currentUser) return;
+    await persist(async () => {
+      await api.trocarSenha(passwordForm, currentUser.username);
+      setPasswordForm(emptyPassword);
+      setSuccess("Senha alterada com sucesso.");
+    }, "Nao foi possivel alterar a senha.");
+  }
+
+  async function saveUsuario(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await persist(async () => {
+      if (editingUserId) {
+        const payload: Partial<Usuario> & { password?: string } = {
+          username: userForm.username,
+          first_name: userForm.first_name,
+          last_name: userForm.last_name,
+          email: userForm.email,
+          is_active: userForm.is_active,
+          is_staff: userForm.is_staff
+        };
+        if (userForm.password) {
+          payload.password = userForm.password;
+        }
+        await api.updateUsuario(editingUserId, payload);
+      } else {
+        await api.createUsuario({ ...userForm, password: userForm.password || "12345678" });
+      }
+      cancelUserEdit();
+    }, "Nao foi possivel salvar usuario.");
+  }
+
+  async function savePermissoes(next: UserPermissions) {
+    await persist(async () => {
+      const updated = await api.updatePermissoesTecnico(next);
+      setPermissoes(updated);
+      setSuccess("Permissoes do tecnico atualizadas.");
+    }, "Nao foi possivel atualizar permissoes.");
   }
 
   async function removeLocal(id: number) {
@@ -122,6 +186,11 @@ export default function ConfiguracoesPage() {
   async function removeItem(id: number) {
     if (!window.confirm("Excluir este item?")) return;
     await persist(async () => api.deleteItem(id), "Não foi possível excluir item.");
+  }
+
+  async function removeUsuario(id: number) {
+    if (!window.confirm("Excluir este usuário?")) return;
+    await persist(async () => api.deleteUsuario(id), "Não foi possível excluir usuário.");
   }
 
   function editLocal(local: Local) {
@@ -172,6 +241,25 @@ export default function ConfiguracoesPage() {
     setItemForm(emptyItem);
   }
 
+  function editUsuario(usuario: Usuario) {
+    setSection("usuarios");
+    setEditingUserId(usuario.id);
+    setUserForm({
+      username: usuario.username,
+      password: "",
+      first_name: usuario.first_name || "",
+      last_name: usuario.last_name || "",
+      email: usuario.email || "",
+      is_active: usuario.is_active,
+      is_staff: usuario.is_staff
+    });
+  }
+
+  function cancelUserEdit() {
+    setEditingUserId(null);
+    setUserForm(emptyUser);
+  }
+
   return (
     <section className="content-band">
       <div className="section-head">
@@ -187,11 +275,12 @@ export default function ConfiguracoesPage() {
 
       {loading ? <LoadingState /> : null}
       {error ? <ErrorState message={error} /> : null}
+      {success ? <div className="process-feedback done">{success}</div> : null}
 
       {!loading ? (
         <div className="settings-layout">
           <aside className="settings-sidebar" aria-label="Áreas de configuração">
-            {sections.map((item) => {
+            {visibleSections.map((item) => {
               const Icon = item.icon;
               const active = section === item.id;
               return (
@@ -203,16 +292,21 @@ export default function ConfiguracoesPage() {
                 >
                   <Icon size={18} />
                   <span>{item.label}</span>
-                  <strong>{item.id === "locais" ? locais.length : item.id === "leitores" ? antenas.length : itens.length}</strong>
+                  <strong>{sectionCount(item.id, { locais, antenas, itens, usuarios })}</strong>
                 </button>
               );
             })}
           </aside>
 
           <article className="panel settings-detail">
+            {section === "senha" ? (
+              <PasswordEditor busy={busy} form={passwordForm} onSubmit={savePassword} setForm={setPasswordForm} />
+            ) : null}
+
             {section === "locais" ? (
               <LocalEditor
                 busy={busy}
+                canManage={canManageCadastros}
                 editingId={editingLocalId}
                 form={localForm}
                 locais={locais}
@@ -228,6 +322,7 @@ export default function ConfiguracoesPage() {
               <AntenaEditor
                 antenas={antenas}
                 busy={busy}
+                canManage={canManageCadastros}
                 editingId={editingAntenaId}
                 form={antenaForm}
                 localNameById={localNameById}
@@ -243,6 +338,7 @@ export default function ConfiguracoesPage() {
             {section === "itens" ? (
               <ItemEditor
                 busy={busy}
+                canManage={canManageCadastros}
                 editingId={editingItemId}
                 form={itemForm}
                 itens={itens}
@@ -254,6 +350,24 @@ export default function ConfiguracoesPage() {
                 setForm={setItemForm}
               />
             ) : null}
+
+            {section === "usuarios" && currentUser?.is_admin ? (
+              <UsuarioEditor
+                busy={busy}
+                editingId={editingUserId}
+                form={userForm}
+                onCancel={cancelUserEdit}
+                onDelete={removeUsuario}
+                onEdit={editUsuario}
+                onSubmit={saveUsuario}
+                setForm={setUserForm}
+                usuarios={usuarios}
+              />
+            ) : null}
+
+            {section === "permissoes" && currentUser?.is_admin && permissoes ? (
+              <PermissoesEditor busy={busy} permissoes={permissoes} onChange={savePermissoes} />
+            ) : null}
           </article>
         </div>
       ) : null}
@@ -263,6 +377,7 @@ export default function ConfiguracoesPage() {
 
 function LocalEditor(props: {
   busy: boolean;
+  canManage: boolean;
   editingId: number | null;
   form: LocalForm;
   locais: Local[];
@@ -272,6 +387,26 @@ function LocalEditor(props: {
   onEdit: (local: Local) => void;
   onDelete: (id: number) => void;
 }) {
+  if (!props.canManage) {
+    return (
+      <>
+        <EditorHeader title="Locais" editing={false} />
+        <div className="state-box">Seu perfil permite consultar locais, mas nao alterar cadastros.</div>
+        <RecordList
+          readOnly
+          empty="Nenhum local cadastrado."
+          items={props.locais.map((local) => ({
+            id: local.id,
+            title: local.nome,
+            meta: local.codigo,
+            onEdit: () => props.onEdit(local),
+            onDelete: () => props.onDelete(local.id)
+          }))}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <EditorHeader title="Locais" editing={Boolean(props.editingId)} />
@@ -281,6 +416,7 @@ function LocalEditor(props: {
         <FormActions busy={props.busy} editing={Boolean(props.editingId)} onCancel={props.onCancel} />
       </form>
       <RecordList
+        readOnly={!props.canManage}
         empty="Nenhum local cadastrado."
         items={props.locais.map((local) => ({
           id: local.id,
@@ -297,6 +433,7 @@ function LocalEditor(props: {
 function AntenaEditor(props: {
   antenas: Antena[];
   busy: boolean;
+  canManage: boolean;
   editingId: number | null;
   form: AntenaForm;
   locais: Local[];
@@ -307,6 +444,27 @@ function AntenaEditor(props: {
   onEdit: (antena: Antena) => void;
   onDelete: (id: number) => void;
 }) {
+  if (!props.canManage) {
+    return (
+      <>
+        <EditorHeader title="Leitores" editing={false} />
+        <div className="state-box">Seu perfil permite consultar leitores, mas nao alterar cadastros.</div>
+        <RecordList
+          readOnly
+          empty="Nenhum leitor cadastrado."
+          items={props.antenas.map((antena) => ({
+            id: antena.id,
+            title: antena.nome,
+            meta: `${antena.hardware_id} - ${props.localNameById.get(antena.local_id) || antena.local_nome} - ${antena.modo_comando_display}`,
+            badge: antena.command_token_configurado ? `${antena.tipo_display} / token` : antena.tipo_display,
+            onEdit: () => props.onEdit(antena),
+            onDelete: () => props.onDelete(antena.id)
+          }))}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <EditorHeader title="Leitores" editing={Boolean(props.editingId)} />
@@ -365,6 +523,7 @@ function AntenaEditor(props: {
         <FormActions busy={props.busy || !props.form.local_id} editing={Boolean(props.editingId)} onCancel={props.onCancel} />
       </form>
       <RecordList
+        readOnly={!props.canManage}
         empty="Nenhum leitor cadastrado."
         items={props.antenas.map((antena) => ({
           id: antena.id,
@@ -381,6 +540,7 @@ function AntenaEditor(props: {
 
 function ItemEditor(props: {
   busy: boolean;
+  canManage: boolean;
   editingId: number | null;
   form: ItemForm;
   itens: ItemPatrimonial[];
@@ -392,6 +552,27 @@ function ItemEditor(props: {
   onDelete: (id: number) => void;
 }) {
   const localOptions = props.locais.map((local) => ({ value: local.id, label: local.nome }));
+  if (!props.canManage) {
+    return (
+      <>
+        <EditorHeader title="Itens" editing={false} />
+        <div className="state-box">Seu perfil permite consultar itens, mas nao alterar cadastros.</div>
+        <RecordList
+          readOnly
+          empty="Nenhum item cadastrado."
+          items={props.itens.map((item) => ({
+            id: item.id,
+            title: item.nome,
+            meta: `${item.tag_id} - logico: ${item.local_logico_nome || "-"} - fisico: ${item.local_fisico_nome || "-"}`,
+            badge: item.ativo ? "Ativo" : "Inativo",
+            onEdit: () => props.onEdit(item),
+            onDelete: () => props.onDelete(item.id)
+          }))}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <EditorHeader title="Itens" editing={Boolean(props.editingId)} />
@@ -423,6 +604,7 @@ function ItemEditor(props: {
         <FormActions busy={props.busy} editing={Boolean(props.editingId)} onCancel={props.onCancel} />
       </form>
       <RecordList
+        readOnly={!props.canManage}
         empty="Nenhum item cadastrado."
         items={props.itens.map((item) => ({
           id: item.id,
@@ -433,6 +615,108 @@ function ItemEditor(props: {
           onDelete: () => props.onDelete(item.id)
         }))}
       />
+    </>
+  );
+}
+
+function PasswordEditor(props: {
+  busy: boolean;
+  form: PasswordForm;
+  setForm: (form: PasswordForm) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <>
+      <EditorHeader title="Trocar senha" editing={false} />
+      <form className="settings-form" onSubmit={props.onSubmit}>
+        <TextField label="Senha atual" type="password" value={props.form.senha_atual} onChange={(senha_atual) => props.setForm({ ...props.form, senha_atual })} />
+        <TextField label="Nova senha" type="password" value={props.form.nova_senha} onChange={(nova_senha) => props.setForm({ ...props.form, nova_senha })} />
+        <div className="settings-actions">
+          <button className="button" disabled={props.busy} type="submit">
+            <Save size={17} />
+            Alterar senha
+          </button>
+        </div>
+      </form>
+    </>
+  );
+}
+
+function UsuarioEditor(props: {
+  busy: boolean;
+  editingId: number | null;
+  form: UserForm;
+  usuarios: Usuario[];
+  setForm: (form: UserForm) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onCancel: () => void;
+  onEdit: (usuario: Usuario) => void;
+  onDelete: (id: number) => void;
+}) {
+  return (
+    <>
+      <EditorHeader title="Usuarios" editing={Boolean(props.editingId)} />
+      <form className="settings-form" onSubmit={props.onSubmit}>
+        <TextField label="Usuario" value={props.form.username} onChange={(username) => props.setForm({ ...props.form, username })} />
+        <TextField label={props.editingId ? "Nova senha (opcional)" : "Senha inicial"} required={!props.editingId} type="password" value={props.form.password} onChange={(password) => props.setForm({ ...props.form, password })} />
+        <TextField label="Nome" required={false} value={props.form.first_name} onChange={(first_name) => props.setForm({ ...props.form, first_name })} />
+        <TextField label="Sobrenome" required={false} value={props.form.last_name} onChange={(last_name) => props.setForm({ ...props.form, last_name })} />
+        <TextField label="Email" required={false} value={props.form.email} onChange={(email) => props.setForm({ ...props.form, email })} />
+        <label className="field">
+          <span>Perfil</span>
+          <select className="select" value={props.form.is_staff ? "admin" : "tecnico"} onChange={(event) => props.setForm({ ...props.form, is_staff: event.target.value === "admin" })}>
+            <option value="tecnico">Tecnico</option>
+            <option value="admin">Admin</option>
+          </select>
+        </label>
+        <label className="check-field">
+          <input checked={props.form.is_active} type="checkbox" onChange={(event) => props.setForm({ ...props.form, is_active: event.target.checked })} />
+          <span>Usuario ativo</span>
+        </label>
+        <FormActions busy={props.busy} editing={Boolean(props.editingId)} onCancel={props.onCancel} />
+      </form>
+      <RecordList
+        empty="Nenhum usuario cadastrado."
+        items={props.usuarios.map((usuario) => ({
+          id: usuario.id,
+          title: usuario.username,
+          meta: `${usuario.first_name || "-"} ${usuario.last_name || ""} - ${usuario.email || "sem email"}`,
+          badge: `${usuario.perfil}${usuario.is_active ? "" : " / inativo"}`,
+          onEdit: () => props.onEdit(usuario),
+          onDelete: () => props.onDelete(usuario.id)
+        }))}
+      />
+    </>
+  );
+}
+
+function PermissoesEditor(props: { busy: boolean; permissoes: UserPermissions; onChange: (permissoes: UserPermissions) => void }) {
+  const items: { key: keyof UserPermissions; label: string }[] = [
+    { key: "gerenciar_cadastros", label: "Gerenciar cadastros" },
+    { key: "acionar_leitores", label: "Acionar leitores" },
+    { key: "executar_auditoria", label: "Executar auditoria" },
+    { key: "resolver_inconsistencias", label: "Resolver inconsistencias" },
+    { key: "ver_logs", label: "Ver log operacional" }
+  ];
+  return (
+    <>
+      <EditorHeader title="Permissoes do Tecnico" editing={false} />
+      <div className="record-list">
+        {items.map((item) => (
+          <label className="record-row" key={item.key}>
+            <div>
+              <strong>{item.label}</strong>
+              <span>{props.permissoes[item.key] ? "Liberado" : "Bloqueado"}</span>
+            </div>
+            <input
+              checked={Boolean(props.permissoes[item.key])}
+              disabled={props.busy}
+              type="checkbox"
+              onChange={(event) => props.onChange({ ...props.permissoes, [item.key]: event.target.checked })}
+            />
+          </label>
+        ))}
+      </div>
     </>
   );
 }
@@ -451,18 +735,20 @@ function EditorHeader({ title, editing }: { title: string; editing: boolean }) {
 function TextField({
   label,
   required = true,
+  type = "text",
   value,
   onChange
 }: {
   label: string;
   required?: boolean;
+  type?: string;
   value: string;
   onChange: (value: string) => void;
 }) {
   return (
     <label className="field">
       <span>{label}</span>
-      <input className="input" required={required} value={value} onChange={(event) => onChange(event.target.value)} />
+      <input className="input" required={required} type={type} value={value} onChange={(event) => onChange(event.target.value)} />
     </label>
   );
 }
@@ -514,9 +800,11 @@ function FormActions({ busy, editing, onCancel }: { busy: boolean; editing: bool
 
 function RecordList({
   empty,
-  items
+  items,
+  readOnly = false
 }: {
   empty: string;
+  readOnly?: boolean;
   items: { id: number; title: string; meta: string; badge?: string; onEdit: () => void; onDelete: () => void }[];
 }) {
   if (items.length === 0) {
@@ -532,16 +820,29 @@ function RecordList({
             <span>{item.meta}</span>
           </div>
           {item.badge ? <span className="badge">{item.badge}</span> : null}
-          <div className="record-actions">
-            <button className="icon-action" type="button" onClick={item.onEdit} title="Editar">
-              <Pencil size={16} />
-            </button>
-            <button className="icon-action" type="button" onClick={item.onDelete} title="Excluir">
-              <Trash2 size={16} />
-            </button>
-          </div>
+          {!readOnly ? (
+            <div className="record-actions">
+              <button className="icon-action" type="button" onClick={item.onEdit} title="Editar">
+                <Pencil size={16} />
+              </button>
+              <button className="icon-action" type="button" onClick={item.onDelete} title="Excluir">
+                <Trash2 size={16} />
+              </button>
+            </div>
+          ) : null}
         </div>
       ))}
     </div>
   );
+}
+
+function sectionCount(
+  id: Section,
+  data: { locais: Local[]; antenas: Antena[]; itens: ItemPatrimonial[]; usuarios: Usuario[] }
+) {
+  if (id === "locais") return data.locais.length;
+  if (id === "leitores") return data.antenas.length;
+  if (id === "itens") return data.itens.length;
+  if (id === "usuarios") return data.usuarios.length;
+  return "";
 }
