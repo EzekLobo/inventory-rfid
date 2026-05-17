@@ -63,6 +63,7 @@ export default function InconsistenciasPage() {
   const [expandedAuditId, setExpandedAuditId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [syncingGroupId, setSyncingGroupId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [action, setAction] = useState<ActionState | null>(null);
@@ -162,6 +163,27 @@ export default function InconsistenciasPage() {
     setAssociateItemId("");
   }
 
+  async function sincronizarLote(event: React.MouseEvent, group: AuditGroup) {
+    event.stopPropagation();
+    const divergentes = group.items.filter((item) => !item.resolvida && item.tipo === "local_divergente");
+    if (divergentes.length === 0) return;
+
+    setSyncingGroupId(group.id);
+    setSuccess("");
+    setError("");
+    try {
+      await Promise.all(
+        divergentes.map((item) => api.confirmarLocalInconsistencia(item.id, "Sincronização em lote da auditoria"))
+      );
+      setSuccess(`${divergentes.length} locais sincronizados com sucesso.`);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao sincronizar em lote.");
+    } finally {
+      setSyncingGroupId(null);
+    }
+  }
+
   async function submitAction(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedMode || !activeInconsistencia) return;
@@ -253,20 +275,42 @@ export default function InconsistenciasPage() {
           <div className="grouped-list">
             {groups.map((group) => {
               const expanded = expandedAuditId === group.id;
+              const countDivergentes = group.items.filter((i) => !i.resolvida && i.tipo === "local_divergente").length;
+
               return (
                 <section className="group-block" key={group.id}>
-                  <button className="group-header" type="button" onClick={() => toggleAudit(group.id)}>
+                  <div
+                    className="group-header"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleAudit(group.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") toggleAudit(group.id);
+                    }}
+                  >
                     <span className="group-title">
                       {expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                       <strong>{group.title}</strong>
                     </span>
                     <span className="group-date">{new Date(group.createdAt).toLocaleString("pt-BR")}</span>
                     <span className="group-summary">
+                      {countDivergentes > 0 && canResolve ? (
+                        <button
+                          className="button subtle small"
+                          disabled={syncingGroupId === group.id}
+                          title="Sincronizar todos os locais divergentes desta auditoria"
+                          type="button"
+                          onClick={(e) => sincronizarLote(e, group)}
+                        >
+                          <RefreshCw size={14} className={syncingGroupId === group.id ? "spinning" : ""} />
+                          Sincronizar ({countDivergentes})
+                        </button>
+                      ) : null}
                       <span className="badge">{group.items.length} total</span>
                       {group.abertas ? <span className="badge red">{group.abertas} aberta(s)</span> : null}
                       {group.resolvidas ? <span className="badge green">{group.resolvidas} resolvida(s)</span> : null}
                     </span>
-                  </button>
+                  </div>
 
                   {expanded ? (
                     <>

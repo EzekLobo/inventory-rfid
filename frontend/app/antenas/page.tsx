@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Play, Radar, RefreshCw } from "lucide-react";
+import { Radar, RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
 import { isLatestRequest, useDelayedLoading } from "@/lib/requestState";
 import { useAuth } from "@/context/AuthContext";
@@ -16,8 +16,7 @@ type ActiveProcess = {
 };
 
 function commandLabel(command: AcionamentoResponse) {
-  const action = command.status === "auditoria_iniciada" ? "Auditoria iniciada" : "Sincronização iniciada";
-  return `${action} até ${new Date(command.expires_at).toLocaleTimeString("pt-BR")}`;
+  return `Auditoria iniciada até ${new Date(command.expires_at).toLocaleTimeString("pt-BR")}`;
 }
 
 export default function AntenasPage() {
@@ -52,18 +51,16 @@ export default function AntenasPage() {
     }
   }
 
-  async function acionar(id: number, audit = false) {
+  async function acionar(id: number) {
     setBusyId(id);
     setError("");
     try {
-      const response = audit ? await api.auditarAntena(id, duracao) : await api.ativarAntena(id, duracao);
+      const response = await api.auditarAntena(id, duracao);
       setLastCommand(response);
       setFinishedMessage("");
       setActiveProcess({
-        label: audit ? "Auditoria em andamento" : "Sincronização em andamento",
-        detail: audit
-          ? "O leitor está coletando tags para conferir o local."
-          : "O leitor está coletando tags para atualizar a localização física.",
+        label: "Auditoria em andamento",
+        detail: "O leitor está coletando tags para conferir o local.",
         startedAt: Date.now(),
         expiresAt: new Date(response.expires_at).getTime()
       });
@@ -98,7 +95,6 @@ export default function AntenasPage() {
     ? Math.min(100, Math.max(0, ((now - activeProcess.startedAt) / (activeProcess.expiresAt - activeProcess.startedAt)) * 100))
     : 0;
   const remainingSeconds = activeProcess ? Math.max(0, Math.ceil((activeProcess.expiresAt - now) / 1000)) : 0;
-  const canSync = Boolean(currentUser?.permissions.acionar_leitores);
   const canAudit = Boolean(currentUser?.permissions.executar_auditoria);
 
   return (
@@ -190,26 +186,14 @@ export default function AntenasPage() {
                     <td>{antena.ultimo_ping ? new Date(antena.ultimo_ping).toLocaleString("pt-BR") : "-"}</td>
                     <td className="actions-cell">
                       <div className="action-buttons">
-                        {!canSync && !canAudit ? <span className="muted-text">Sem permissões</span> : null}
-                        {canSync ? (
-                        <button
-                          className="button action-button"
-                          disabled={!antena.online || busyId === antena.id}
-                          title={antena.online ? "Abrir janela de sincronização" : "Leitor offline"}
-                          type="button"
-                          onClick={() => acionar(antena.id)}
-                        >
-                          <Play size={17} />
-                          Sincronizar
-                        </button>
-                        ) : null}
+                        {!canAudit ? <span className="muted-text">Sem permissões</span> : null}
                         {canAudit ? (
                         <button
                           className="button yellow action-button"
                           disabled={!antena.online || busyId === antena.id}
                           title={antena.online ? "Abrir auditoria do local" : "Leitor offline"}
                           type="button"
-                          onClick={() => acionar(antena.id, true)}
+                          onClick={() => acionar(antena.id)}
                         >
                           <Radar size={17} />
                           Auditar
