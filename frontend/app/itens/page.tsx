@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ChevronDown, ChevronRight, History, MapPin, Search } from "lucide-react";
 import { api } from "@/lib/api";
+import { compactRfidTag, fullRfidTag, labelMetadataKey, labelTimelineTipo } from "@/lib/display";
 import { isLatestRequest, useDelayedLoading } from "@/lib/requestState";
 import type { ItemPatrimonial, PaginatedResponse, TimelineEvento } from "@/lib/types";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/DataState";
@@ -122,7 +123,7 @@ export default function ItensPage() {
 
         {showLoading ? <LoadingState /> : null}
         {error ? <ErrorState message={error} /> : null}
-        {!loading && !error && itens.length === 0 ? <EmptyState label="Nenhum item encontrado." /> : null}
+        {!loading && !error && itens.length === 0 ? <EmptyState label="Nenhum item encontrado para a busca atual." /> : null}
 
         {!loading && !error && groups.length > 0 ? (
           <div className="grouped-list">
@@ -152,7 +153,7 @@ export default function ItensPage() {
                               {expandedItemId === item.id ? <ChevronDown size={17} /> : <ChevronRight size={17} />}
                               <strong>{item.nome}</strong>
                             </span>
-                            <span>Tag {item.tag_id}</span>
+                            <span className="technical-line" title={fullRfidTag(item.tag_id)}>Tag {compactRfidTag(item.tag_id)}</span>
                             <span>Físico: {item.local_fisico_nome || "-"}</span>
                           </button>
                           <div className="compact-badges">
@@ -232,7 +233,7 @@ function ItemTimeline({
             <History size={17} /> Histórico de {item.nome}
           </strong>
           <span>
-            Tag {item.tag_id} | lógico: {item.local_logico_nome || "-"} | físico: {item.local_fisico_nome || "-"}
+            Tag <span className="technical-id" title={fullRfidTag(item.tag_id)}>{compactRfidTag(item.tag_id)}</span> | lógico: {item.local_logico_nome || "-"} | físico: {item.local_fisico_nome || "-"}
           </span>
         </div>
       </div>
@@ -245,7 +246,7 @@ function ItemTimeline({
         <div className="item-timeline-list">
           {events.map((event) => (
             <div className="item-timeline-event" key={event.id}>
-              <span className="badge">{event.tipo}</span>
+              <span className="badge">{labelTimelineTipo(event.tipo)}</span>
               <div>
                 <strong>{event.mensagem}</strong>
                 <span>{new Date(event.criado_em).toLocaleString("pt-BR")}</span>
@@ -260,20 +261,13 @@ function ItemTimeline({
 }
 
 function metadataSummary(metadata: Record<string, unknown>) {
-  const labels: Record<string, string> = {
-    evento: "evento",
-    tag_id: "tag",
-    local_id: "local",
-    antenna_id: "leitor",
-    motivo: "motivo",
-    tipo: "tipo",
-    inconsistência_id: "inconsistência"
-  };
-  return Object.keys(labels)
+  const keys = ["evento", "tag_id", "local_id", "antenna_id", "motivo", "tipo", "inconsistencia_id"];
+  return keys
     .map((key) => {
       const value = metadata[key];
       if (value === undefined || value === null || value === "") return null;
-      return `${labels[key]}: ${String(value)}`;
+      const displayValue = key === "tag_id" ? compactRfidTag(String(value)) : String(value);
+      return `${labelMetadataKey(key)}: ${displayValue}`;
     })
     .filter(Boolean)
     .join(" | ");

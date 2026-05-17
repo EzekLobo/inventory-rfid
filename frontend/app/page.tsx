@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Activity, AlertTriangle, Antenna, RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
+import { compactRfidTag, fullRfidTag, labelInconsistenciaTipo, labelTimelineTipo } from "@/lib/display";
 import { isLatestRequest, useDelayedLoading } from "@/lib/requestState";
 import type { Antena, Inconsistencia, OperacionalResumo, TimelineEvento } from "@/lib/types";
 import { ErrorState, LoadingState } from "@/components/ui/DataState";
@@ -133,6 +134,11 @@ export default function HomePage() {
                             </td>
                           </tr>
                         ))}
+                        {antenas.length === 0 ? (
+                          <tr>
+                            <td colSpan={3}>Nenhum leitor cadastrado.</td>
+                          </tr>
+                        ) : null}
                       </tbody>
                     </table>
                   </div>
@@ -145,9 +151,9 @@ export default function HomePage() {
                   <div className="table-wrap">
                     <table className="data-table">
                       <colgroup>
-                        <col style={{ width: "34%" }} />
                         <col style={{ width: "32%" }} />
-                        <col style={{ width: "34%" }} />
+                        <col style={{ width: "40%" }} />
+                        <col style={{ width: "28%" }} />
                       </colgroup>
                       <thead>
                         <tr>
@@ -157,13 +163,21 @@ export default function HomePage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {inconsistencias.slice(0, 5).map((item) => (
-                          <tr key={item.id}>
-                            <td>{item.tipo}</td>
-                            <td>{item.tag_id || item.item_id || "-"}</td>
-                            <td>{new Date(item.criado_em).toLocaleString("pt-BR")}</td>
+                        {inconsistencias.slice(0, 5).map((item) => {
+                          const tag = fullRfidTag(item.tag_id || item.item_id);
+                          return (
+                            <tr key={item.id}>
+                              <td>{labelInconsistenciaTipo(item.tipo)}</td>
+                              <td className="rfid-tag-cell" title={tag}>{compactRfidTag(tag)}</td>
+                              <td>{new Date(item.criado_em).toLocaleString("pt-BR")}</td>
+                            </tr>
+                          );
+                        })}
+                        {inconsistencias.length === 0 ? (
+                          <tr>
+                            <td colSpan={3}>Nenhuma inconsistência aberta.</td>
                           </tr>
-                        ))}
+                        ) : null}
                       </tbody>
                     </table>
                   </div>
@@ -192,12 +206,17 @@ export default function HomePage() {
                       {timeline.slice(0, 8).map((evento) => (
                         <tr key={evento.id}>
                           <td>
-                            <span className="badge">{evento.tipo}</span>
+                            <span className="badge">{labelTimelineTipo(evento.tipo)}</span>
                           </td>
                           <td>{evento.mensagem}</td>
                           <td>{new Date(evento.criado_em).toLocaleString("pt-BR")}</td>
                         </tr>
                       ))}
+                      {timeline.length === 0 ? (
+                        <tr>
+                          <td colSpan={3}>Nenhum evento recente encontrado.</td>
+                        </tr>
+                      ) : null}
                     </tbody>
                   </table>
                 </div>

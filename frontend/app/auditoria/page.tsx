@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, ChevronDown, ChevronRight, HelpCircle, Play, RefreshCw, Send, ShieldAlert } from "lucide-react";
 import { api } from "@/lib/api";
+import { compactRfidTag, fullRfidTag } from "@/lib/display";
 import { isLatestRequest, useDelayedLoading } from "@/lib/requestState";
 import { useAuth } from "@/context/AuthContext";
 import type {
@@ -305,6 +306,10 @@ export default function AuditoriaPage() {
     : 0;
   const remainingSeconds = activeProcess ? Math.max(0, Math.ceil((activeProcess.expiresAt - now) / 1000)) : 0;
   const canAudit = Boolean(currentUser?.permissions.executar_auditoria);
+  const selectedLocalNames = uniqueValues(selectedAntennas.map((antena) => antena.local_nome));
+  const locaisResumo = auditAll ? "Todos" : selectedLocalNames.join(", ") || "-";
+  const leitoresResumo = auditAll ? antenas.length : selectedAntennas.length;
+  const itensEsperadosResumo = auditAll ? itens.filter((item) => item.ativo).length : expectedItems.length;
 
   return (
     <section className="content-band">
@@ -339,64 +344,84 @@ export default function AuditoriaPage() {
       {!activeProcess && finishedMessage ? <div className="process-feedback done">{finishedMessage}</div> : null}
 
       {!loading ? (
-        <div className="grid two">
-          <article className="panel">
+        <div className="grid two audit-action-grid">
+          <article className="panel audit-action-panel">
             <h2>
               <ShieldAlert size={21} /> Auditoria em lote
             </h2>
-            <div className="form-row">
-              <div className="field">
-                <label htmlFor="duracao">Duração</label>
-                <input
-                  className="input"
-                  id="duracao"
-                  min={1}
-                  type="number"
-                  value={duracao}
-                  onChange={(event) => setDuracao(Number(event.target.value))}
-                />
-              </div>
-              <div className="field audit-select-field">
-                <span>Leitores</span>
-                <button className="select audit-picker-trigger" type="button" onClick={() => setSelectorOpen((value) => !value)}>
-                  {selectionLabel}
-                  <ChevronDown size={16} />
-                </button>
-                {selectorOpen ? (
-                  <div className="audit-picker">
-                    <input
-                      className="input audit-picker-search"
-                      placeholder="Pesquisar leitor ou local"
-                      value={antennaSearch}
-                      onChange={(event) => setAntennaSearch(event.target.value)}
-                    />
-                    <button className={auditAll ? "audit-picker-option active" : "audit-picker-option"} type="button" onClick={selectAllAntennas}>
-                      <CheckCircle2 size={17} />
-                      <span>
-                        <strong>Todos os leitores</strong>
-                        <small>{antenas.length} leitor(es) cadastrados</small>
-                      </span>
-                    </button>
-                    {filteredAntennas.map((antena) => (
-                      <button
-                        className={selectedAntennaIds.includes(antena.id) && !auditAll ? "audit-picker-option active" : "audit-picker-option"}
-                        key={antena.id}
-                        type="button"
-                        onClick={() => toggleAntenna(antena.id)}
-                      >
-                        <input checked={selectedAntennaIds.includes(antena.id) && !auditAll} readOnly type="checkbox" />
+            <div className="audit-panel-body">
+              <div className="audit-control-grid">
+                <div className="field">
+                  <label htmlFor="duracao">Duração</label>
+                  <input
+                    className="input"
+                    id="duracao"
+                    min={1}
+                    type="number"
+                    value={duracao}
+                    onChange={(event) => setDuracao(Number(event.target.value))}
+                  />
+                </div>
+                <div className="field audit-select-field">
+                  <span>Leitores</span>
+                  <button className="select audit-picker-trigger" type="button" onClick={() => setSelectorOpen((value) => !value)}>
+                    {selectionLabel}
+                    <ChevronDown size={16} />
+                  </button>
+                  {selectorOpen ? (
+                    <div className="audit-picker">
+                      <input
+                        className="input audit-picker-search"
+                        placeholder="Pesquisar leitor ou local"
+                        value={antennaSearch}
+                        onChange={(event) => setAntennaSearch(event.target.value)}
+                      />
+                      <button className={auditAll ? "audit-picker-option active" : "audit-picker-option"} type="button" onClick={selectAllAntennas}>
+                        <CheckCircle2 size={17} />
                         <span>
-                          <strong>{antena.nome}</strong>
-                          <small>
-                            {antena.local_nome} - {antena.tipo_display} - {antena.online ? "online" : "offline"}
-                          </small>
+                          <strong>Todos os leitores</strong>
+                          <small>{antenas.length} leitor(es) cadastrados</small>
                         </span>
                       </button>
-                    ))}
-                    {filteredAntennas.length === 0 ? <div className="audit-picker-empty">Nenhum leitor encontrado.</div> : null}
-                  </div>
-                ) : null}
+                      {filteredAntennas.map((antena) => (
+                        <button
+                          className={selectedAntennaIds.includes(antena.id) && !auditAll ? "audit-picker-option active" : "audit-picker-option"}
+                          key={antena.id}
+                          type="button"
+                          onClick={() => toggleAntenna(antena.id)}
+                        >
+                          <input checked={selectedAntennaIds.includes(antena.id) && !auditAll} readOnly type="checkbox" />
+                          <span>
+                            <strong>{antena.nome}</strong>
+                            <small>
+                              {antena.local_nome} - {antena.tipo_display} - {antena.online ? "online" : "offline"}
+                            </small>
+                          </span>
+                        </button>
+                      ))}
+                      {filteredAntennas.length === 0 ? <div className="audit-picker-empty">Nenhum leitor encontrado.</div> : null}
+                    </div>
+                  ) : null}
+                </div>
               </div>
+
+              <div className="audit-summary-strip">
+                <span title={locaisResumo}>
+                  <small>Locais</small>
+                  <strong>{locaisResumo}</strong>
+                </span>
+                <span>
+                  <small>Leitores</small>
+                  <strong>{leitoresResumo}</strong>
+                </span>
+                <span>
+                  <small>Itens esperados</small>
+                  <strong>{itensEsperadosResumo}</strong>
+                </span>
+              </div>
+            </div>
+
+            <div className="audit-panel-footer">
               <button
                 className="button yellow"
                 disabled={!canAudit || submitting || antenas.length === 0 || (!auditAll && selectedAntennaIds.length === 0)}
@@ -407,56 +432,51 @@ export default function AuditoriaPage() {
                 Iniciar auditoria
               </button>
             </div>
-
-            <p>
-              Os leitores selecionados ficam ativos pela duração definida. Locais selecionados:{" "}
-              <strong>{auditAll ? "todos" : uniqueValues(selectedAntennas.map((antena) => antena.local_nome)).join(", ") || "-"}</strong>.
-              Itens esperados nesses locais: <strong>{auditAll ? itens.filter((item) => item.ativo).length : expectedItems.length}</strong>.
-            </p>
           </article>
 
-          <article className="panel">
+          <article className="panel audit-action-panel">
             <h2>
               <Send size={21} /> Simular leitura RFID
             </h2>
-            <div className="field">
-              <label htmlFor="simulation-antenna">Leitor da simulação</label>
-              <select
-                className="select"
-                id="simulation-antenna"
-                value={simulationAntennaId}
-                onChange={(event) => setSimulationAntennaId(Number(event.target.value))}
+            <div className="audit-panel-body">
+              <div className="field">
+                <label htmlFor="simulation-antenna">Leitor da simulação</label>
+                <select
+                  className="select"
+                  id="simulation-antenna"
+                  value={simulationAntennaId}
+                  onChange={(event) => setSimulationAntennaId(Number(event.target.value))}
+                >
+                  {antenas.map((antena) => (
+                    <option key={antena.id} value={antena.id}>
+                      {antena.nome} - {antena.local_nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="tags">Tags simuladas</label>
+                <textarea
+                  className="textarea audit-tags-textarea"
+                  id="tags"
+                  placeholder="Cole tags de teste, uma por linha ou separadas por vírgula. Vazio = nenhuma tag lida."
+                  value={tagsText}
+                  onChange={(event) => setTagsText(event.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="audit-panel-footer">
+              <button
+                disabled={!canAudit || submitting || !simulationAntennaId}
+                className="button"
+                type="button"
+                onClick={sendAuditResult}
               >
-                {antenas.map((antena) => (
-                  <option key={antena.id} value={antena.id}>
-                    {antena.nome} - {antena.local_nome}
-                  </option>
-                ))}
-              </select>
+                <CheckCircle2 size={17} />
+                Processar simulação
+              </button>
             </div>
-            <div className="field">
-              <label htmlFor="tags">Tags simuladas</label>
-              <textarea
-                className="textarea"
-                id="tags"
-                placeholder="Cole tags de teste, uma por linha ou separadas por vírgula"
-                value={tagsText}
-                onChange={(event) => setTagsText(event.target.value)}
-              />
-            </div>
-            <p>
-              Use este campo para testar a auditoria manualmente. As tags informadas serão tratadas como se tivessem
-              sido lidas pelo RFID. Se deixar vazio, a simulação considera que nenhuma tag foi encontrada.
-            </p>
-            <button
-              disabled={!canAudit || submitting || !simulationAntennaId}
-              className="button mt-3"
-              type="button"
-              onClick={sendAuditResult}
-            >
-              <CheckCircle2 size={17} />
-              Processar simulação
-            </button>
           </article>
         </div>
       ) : null}
@@ -592,7 +612,7 @@ function AuditItemList({ title, items, empty }: { title: string; items: Auditori
       {items.map((item) => (
         <div className="audit-list-item" key={`${title}-${item.id}-${item.tag_id}`}>
           <strong>{item.nome}</strong>
-          <span>Tag: {item.tag_id}</span>
+          <span className="technical-line" title={fullRfidTag(item.tag_id)}>Tag: {compactRfidTag(item.tag_id)}</span>
           <span>Local lógico: {item.local_logico_nome || "-"}</span>
           <span>Local físico: {item.local_fisico_nome || "-"}</span>
         </div>
@@ -609,7 +629,7 @@ function UnknownTagsList({ tags }: { tags: string[] }) {
       {tags.map((tag) => (
         <div className="audit-list-item" key={tag}>
           <strong>Tag sem cadastro</strong>
-          <span>{tag}</span>
+          <span className="technical-line" title={fullRfidTag(tag)}>{compactRfidTag(tag)}</span>
         </div>
       ))}
     </div>

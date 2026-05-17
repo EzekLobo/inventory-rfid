@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent } from "react";
+import { compactRfidTag } from "@/lib/display";
 import type { ItemPatrimonial, Local } from "@/lib/types";
 import { EditorHeader, FormActions, RecordList, SelectField, TextField } from "@/components/configuracoes/EditorParts";
 
@@ -32,7 +33,7 @@ export function ItemEditor(props: {
           items={props.itens.map((item) => ({
             id: item.id,
             title: item.nome,
-            meta: `${item.tag_id} - lógico: ${item.local_logico_nome || "-"} - físico: ${item.local_fisico_nome || "-"}`,
+            meta: `${compactRfidTag(item.tag_id)} - lógico: ${item.local_logico_nome || "-"} - físico: ${item.local_fisico_nome || "-"}`,
             badge: item.ativo ? "Ativo" : "Inativo",
             onEdit: () => props.onEdit(item),
             onDelete: () => props.onDelete(item.id)
@@ -78,7 +79,7 @@ export function ItemEditor(props: {
         items={props.itens.map((item) => ({
           id: item.id,
           title: item.nome,
-          meta: `${item.tag_id} · lógico: ${item.local_logico_nome || "-"} · físico: ${item.local_fisico_nome || "-"}`,
+          meta: `${compactRfidTag(item.tag_id)} · lógico: ${item.local_logico_nome || "-"} · físico: ${item.local_fisico_nome || "-"}`,
           badge: item.ativo ? "Ativo" : "Inativo",
           onEdit: () => props.onEdit(item),
           onDelete: () => props.onDelete(item.id)

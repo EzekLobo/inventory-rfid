@@ -3,6 +3,7 @@
 import { Fragment, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, ChevronDown, ChevronRight, Filter, RefreshCw, Search } from "lucide-react";
 import { api } from "@/lib/api";
+import { compactRfidTag, labelEventName, labelMetadataKey, labelTimelineTipo } from "@/lib/display";
 import { isLatestRequest, useDelayedLoading } from "@/lib/requestState";
 import type { Antena, Local, PaginatedResponse, TimelineEvento } from "@/lib/types";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/DataState";
@@ -36,8 +37,8 @@ const emptyFilters: LogFilters = {
 
 const tipoOptions = [
   { value: "", label: "Todos" },
-  { value: "movimentacao", label: "Movimentacao" },
-  { value: "inconsistencia", label: "Inconsistencia" },
+  { value: "movimentacao", label: "Movimentação" },
+  { value: "inconsistencia", label: "Inconsistência" },
   { value: "rastro", label: "Rastro" },
   { value: "baixa", label: "Baixa" },
   { value: "sistema", label: "Sistema" }
@@ -47,7 +48,7 @@ const logTabs: { value: LogTab; label: string }[] = [
   { value: "todos", label: "Todos" },
   { value: "itens", label: "Itens" },
   { value: "auditorias", label: "Auditorias" },
-  { value: "inconsistencias", label: "Inconsistencias" },
+  { value: "inconsistencias", label: "Inconsistências" },
   { value: "sistema", label: "Sistema" }
 ];
 
@@ -130,7 +131,7 @@ export default function LogPage() {
       }
     } catch (err) {
       if (!isLatestRequest(requestId, loadRequestId)) return;
-      setError(err instanceof Error ? err.message : "Nao foi possivel carregar o log.");
+      setError(err instanceof Error ? err.message : "Não foi possível carregar o log.");
     } finally {
       if (isLatestRequest(requestId, loadRequestId)) {
         setLoading(false);
@@ -172,7 +173,7 @@ export default function LogPage() {
       <div className="section-head">
         <div>
           <h1>Log operacional</h1>
-          <p>Consulte eventos por contexto: itens, auditorias, inconsistencias e sistema.</p>
+          <p>Consulte eventos por contexto: itens, auditorias, inconsistências e sistema.</p>
         </div>
         <button className="button ghost" type="button" onClick={() => load(filters)}>
           <RefreshCw size={18} />
@@ -277,7 +278,7 @@ export default function LogPage() {
 
         {showLoading ? <LoadingState /> : null}
         {error ? <ErrorState message={error} /> : null}
-        {!loading && !error && data.length === 0 ? <EmptyState label="Nenhum evento encontrado." /> : null}
+        {!loading && !error && data.length === 0 ? <EmptyState label="Nenhum evento encontrado para os filtros atuais." /> : null}
         {!loading && !error && data.length > 0 && visibleData.length === 0 ? <EmptyState label="Nenhum evento neste contexto." /> : null}
 
         {!loading && visibleData.length > 0 ? (
@@ -389,10 +390,10 @@ function DateField({ value, onChange }: { value: string; onChange: (value: strin
 function validateDateFilters(filters: LogFilters) {
   const start = parseValidDate(filters.data_inicio);
   const end = parseValidDate(filters.data_fim);
-  if (filters.data_inicio && !start) return "Informe uma data inicial valida.";
-  if (filters.data_fim && !end) return "Informe uma data final valida.";
+  if (filters.data_inicio && !start) return "Informe uma data inicial válida.";
+  if (filters.data_fim && !end) return "Informe uma data final válida.";
   if (start && end && start.getTime() > end.getTime()) {
-    return "A data inicial nao pode ser maior que a data final.";
+    return "A data inicial não pode ser maior que a data final.";
   }
   return "";
 }
@@ -472,7 +473,7 @@ function LogEventDetails({ evento }: { evento: TimelineEvento }) {
 
       {details.technicalItems.length > 0 ? (
         <details className="log-technical-details">
-          <summary>Metadados tecnicos</summary>
+          <summary>Metadados técnicos</summary>
           <div className="log-detail-grid">
             {details.technicalItems.map((item) => (
               <div className="log-detail-item" key={item.key}>
@@ -532,25 +533,17 @@ function isSystemEvent(evento: TimelineEvento) {
 
 function displayType(evento: TimelineEvento) {
   const eventName = metadataValue(evento.metadados || {}, "evento");
-  const eventLabel = eventNameLabel(eventName);
-  if (eventName && eventLabel !== eventName.replaceAll("_", " ")) return titleCase(eventLabel);
+  if (eventName) return labelEventName(eventName);
 
   const context = getLogContext(evento);
   if (context === "auditoria") return "Auditoria";
-  if (context === "inconsistencia") return "Inconsistencia";
+  if (context === "inconsistencia") return "Inconsistência";
   if (context === "item") return eventTypeLabel(evento.tipo);
   return "Sistema";
 }
 
 function eventTypeLabel(type: string) {
-  const labels: Record<string, string> = {
-    movimentacao: "Movimentacao",
-    inconsistencia: "Inconsistencia",
-    rastro: "Rastro",
-    baixa: "Baixa",
-    sistema: "Sistema"
-  };
-  return labels[type] || type;
+  return labelTimelineTipo(type);
 }
 
 function eventSummary(evento: TimelineEvento) {
@@ -558,7 +551,7 @@ function eventSummary(evento: TimelineEvento) {
   const eventName = metadataValue(metadata, "evento");
 
   if (evento.item_nome) return evento.item_nome;
-  if (metadataValue(metadata, "tag_id")) return `Tag ${metadataValue(metadata, "tag_id")}`;
+  if (metadataValue(metadata, "tag_id")) return `Tag ${compactRfidTag(metadataValue(metadata, "tag_id"))}`;
   if (eventName) return eventNameLabel(eventName);
   if (metadataValue(metadata, "auditoria_job_id")) return `Auditoria #${metadataValue(metadata, "auditoria_job_id")}`;
   return eventTypeLabel(evento.tipo);
@@ -566,8 +559,9 @@ function eventSummary(evento: TimelineEvento) {
 
 function eventSubtext(evento: TimelineEvento) {
   const metadata = evento.metadados || {};
+  const tag = evento.item_tag || metadataValue(metadata, "tag_id");
   const parts = [
-    evento.item_tag || metadataValue(metadata, "tag_id"),
+    tag ? compactRfidTag(tag) : "",
     metadataValue(metadata, "local_nome") || idLabel("local", metadataValue(metadata, "local_id")),
     metadataValue(metadata, "antenna_nome") || idLabel("leitor", metadataValue(metadata, "antenna_id")),
     eventNameLabel(metadataValue(metadata, "evento"))
@@ -611,7 +605,7 @@ function eventDetailSections(evento: TimelineEvento): DetailPanelData {
   }
 
   if (context === "inconsistencia" || isInconsistencyEvent(evento)) {
-    addSection(sections, "Inconsistencia", detailsFromKeys(metadata, usedKeys, [
+    addSection(sections, "Inconsistência", detailsFromKeys(metadata, usedKeys, [
       "inconsistencia_id",
       "inconsistencia_ids",
       "tipo",
@@ -661,7 +655,7 @@ function detailFromValue(key: string, label: string, value: unknown, technical =
   return {
     key,
     label,
-    value: metadataValue(value, undefined, technical)
+    value: key === "tag_id" || key === "item_tag" ? compactRfidTag(String(value)) : metadataValue(value, undefined, technical)
   };
 }
 
@@ -703,80 +697,18 @@ function metadataValue(valueOrMetadata: unknown, key?: string, technical = true)
   }
 
   if (typeof value === "boolean") {
-    return value ? "sim" : "nao";
+    return value ? "sim" : "não";
   }
 
   return String(value);
 }
 
 function metadataLabel(key: string) {
-  const labels: Record<string, string> = {
-    audit: "auditoria",
-    auditoria_execucao_id: "execucao",
-    auditoria_job_id: "auditoria",
-    command_delivery: "entrega do comando",
-    command_url: "URL do comando",
-    duracao_segundos: "duracao",
-    evento: "evento",
-    encontrados: "encontrados",
-    esperados: "esperados",
-    finaliza_em: "finaliza em",
-    hardware_id: "hardware",
-    inconsistencia_id: "inconsistencia",
-    inconsistencia_ids: "inconsistencias",
-    item_nome: "item",
-    item_tag: "tag",
-    itens_divergentes: "itens divergentes",
-    itens_encontrados: "itens encontrados",
-    itens_esperados: "itens esperados",
-    itens_nao_encontrados: "itens nao encontrados",
-    ja_estava_inativo: "ja estava inativo",
-    local_anterior_id: "local anterior",
-    local_fisico_nome: "local fisico",
-    local_id: "local",
-    local_logico_nome: "local logico",
-    local_nome: "local",
-    motivo: "motivo",
-    nao_encontrados: "nao encontrados",
-    nome: "nome",
-    source: "origem",
-    tag_id: "tag",
-    tags: "tags",
-    tags_desconhecidas: "tags desconhecidas",
-    tags_desconhecidas_lista: "tags desconhecidas",
-    tags_fora_do_local: "fora do local",
-    tags_lidas: "tags lidas",
-    tipo: "tipo",
-    total_antenas: "total de leitores",
-    total_lidos: "total lido",
-    antenna_id: "leitor",
-    antenna_ids: "leitores",
-    antenna_nome: "leitor"
-  };
-  return labels[key] || key.replaceAll("_", " ");
+  return labelMetadataKey(key);
 }
 
 function eventNameLabel(value: string) {
-  const labels: Record<string, string> = {
-    auditoria_concluida: "auditoria concluida",
-    auditoria_iniciada: "auditoria iniciada",
-    auditoria_processada: "auditoria processada",
-    baixa_manual: "baixa manual",
-    command_delivery_failed: "falha no comando do leitor",
-    flow_trace: "rastro RFID",
-    item_fora_do_local_auditado: "item fora do local auditado",
-    item_lido_local_correto: "item conferido",
-    item_nao_encontrado: "item nao encontrado",
-    item_reencontrado: "item reencontrado",
-    local_divergente: "local divergente",
-    local_logico_confirmado: "local logico confirmado",
-    reconciliacao: "reconciliacao",
-    tag_desconhecida: "tag desconhecida",
-    tag_desconhecida_associada: "tag associada",
-    tag_desconhecida_cadastrada: "tag cadastrada",
-    tags_read: "leitura RFID"
-  };
-  return labels[value] || value.replaceAll("_", " ");
+  return labelEventName(value);
 }
 
 function idLabel(label: string, value: string) {
@@ -807,17 +739,9 @@ function isAuditItem(value: Record<string, unknown>) {
 function formatAuditItem(value: Record<string, unknown>) {
   const parts = [
     metadataValue(value, "nome"),
-    metadataValue(value, "tag_id") ? `tag ${metadataValue(value, "tag_id")}` : "",
+    metadataValue(value, "tag_id") ? `tag ${compactRfidTag(metadataValue(value, "tag_id"))}` : "",
     metadataValue(value, "local_logico_nome") ? `local ${metadataValue(value, "local_logico_nome")}` : "",
     metadataValue(value, "local_fisico_nome") ? `fisico ${metadataValue(value, "local_fisico_nome")}` : ""
   ].filter(Boolean);
-  return parts.join(" - ") || "Item sem identificacao";
-}
-
-function titleCase(value: string) {
-  return value
-    .split(" ")
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+  return parts.join(" - ") || "Item sem identificação";
 }

@@ -14,17 +14,12 @@ import {
   ShieldQuestion
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { compactRfidTag, fullRfidTag, labelInconsistenciaTipo } from "@/lib/display";
 import { isLatestRequest, useDelayedLoading } from "@/lib/requestState";
 import { useAuth } from "@/context/AuthContext";
 import type { Inconsistencia, ItemPatrimonial, Local, PaginatedResponse } from "@/lib/types";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/DataState";
 import { PaginationControls } from "@/components/ui/PaginationControls";
-
-const labels: Record<string, string> = {
-  local_divergente: "Local divergente",
-  nao_encontrado: "Não encontrado",
-  tag_desconhecida: "Tag desconhecida"
-};
 
 type ActionMode = "confirmar-local" | "resolver" | "cadastrar-tag" | "associar-tag";
 
@@ -269,7 +264,7 @@ export default function InconsistenciasPage() {
         {success ? <div className="process-feedback done">{success}</div> : null}
         {showLoading ? <LoadingState /> : null}
         {error ? <ErrorState message={error} /> : null}
-        {!loading && !error && data.length === 0 ? <EmptyState label="Nenhuma inconsistência encontrada." /> : null}
+        {!loading && !error && data.length === 0 ? <EmptyState label={resolvida === "false" ? "Nenhuma inconsistência aberta." : "Nenhuma inconsistência encontrada para os filtros atuais."} /> : null}
 
         {!loading && !error && groups.length > 0 ? (
           <div className="grouped-list">
@@ -316,21 +311,21 @@ export default function InconsistenciasPage() {
                     <>
                       <div className="group-meta">
                         {group.antennaId ? <span>Leitor {group.antennaId}</span> : null}
-                        <span>{group.tipos.map((value) => labels[value] || value).join(" | ")}</span>
+                        <span>{group.tipos.map((value) => labelInconsistenciaTipo(value)).join(" | ")}</span>
                       </div>
                       <div className="compact-list">
                         {group.items.map((item) => (
                           <article className="compact-row" key={item.id}>
                             <div className="compact-main">
                               <span className="compact-title">
-                                <strong>{item.item_nome || item.item_id || item.tag_id || `#${item.id}`}</strong>
+                                <strong>{item.item_nome || item.item_id || (item.tag_id ? compactRfidTag(item.tag_id) : `#${item.id}`)}</strong>
                                 <span className={item.resolvida ? "badge green" : "badge red"}>
                                   {item.resolvida ? "Resolvida" : "Aberta"}
                                 </span>
                               </span>
                               <span className="compact-meta-line">
-                                <span>{labels[item.tipo] || item.tipo}</span>
-                                <span>Tag {item.tag_id || "-"}</span>
+                                <span>{labelInconsistenciaTipo(item.tipo)}</span>
+                                <span className="technical-line" title={fullRfidTag(item.tag_id)}>Tag {compactRfidTag(item.tag_id)}</span>
                                 <span>Lógico: {item.local_logico_nome || item.local_logico_id || "-"}</span>
                                 <span>Físico: {item.local_fisico_nome || item.local_fisico_id || "-"}</span>
                               </span>
@@ -420,7 +415,7 @@ function groupByAudit(items: Inconsistencia[]): AuditGroup[] {
     .map((group) => ({
       ...group,
       items: group.items.sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime()),
-      tipos: group.tipos.sort((a, b) => (labels[a] || a).localeCompare(labels[b] || b, "pt-BR"))
+      tipos: group.tipos.sort((a, b) => labelInconsistenciaTipo(a).localeCompare(labelInconsistenciaTipo(b), "pt-BR"))
     }))
     .sort((a, b) => {
       if (a.id === "sem-auditoria") return 1;
@@ -480,7 +475,7 @@ function ResolutionHeader({ inconsistencia }: { inconsistencia: Inconsistencia }
       <div>
         <h2>Resolver inconsistência</h2>
         <p className="resolution-context">
-          {labels[inconsistencia.tipo]} - {inconsistencia.item_nome || inconsistencia.tag_id || `#${inconsistencia.id}`}
+          {labelInconsistenciaTipo(inconsistencia.tipo)} - {inconsistencia.item_nome || (inconsistencia.tag_id ? compactRfidTag(inconsistencia.tag_id) : `#${inconsistencia.id}`)}
           {inconsistencia.local_fisico_nome ? ` - ${inconsistencia.local_fisico_nome}` : ""}
         </p>
       </div>
@@ -526,7 +521,7 @@ function ResolutionFormFields({
           <option value="">Selecione</option>
           {itens.map((item) => (
             <option key={item.id} value={item.id}>
-              {item.nome} - {item.tag_id}
+              {item.nome} - {compactRfidTag(item.tag_id)}
             </option>
           ))}
         </select>

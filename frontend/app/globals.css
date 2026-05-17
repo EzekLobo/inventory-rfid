@@ -541,6 +541,14 @@ textarea {
   transition: filter 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
 }
 
+.button svg,
+.badge svg,
+.icon-action svg,
+.group-title svg {
+  display: block;
+  flex: 0 0 auto;
+}
+
 .button:hover:not(:disabled) {
   filter: brightness(1.04);
 }
@@ -554,6 +562,18 @@ textarea {
   background: transparent;
   border-color: var(--line);
   color: var(--text);
+}
+
+.button.subtle {
+  background: rgba(87, 244, 208, 0.08);
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.button.small {
+  font-size: 12px;
+  min-height: 34px;
+  padding: 0 12px;
 }
 
 .button:disabled {
@@ -828,6 +848,32 @@ textarea {
   background: rgba(87, 244, 208, 0.045);
 }
 
+.rfid-tag-cell {
+  font-family: Arial, Helvetica, sans-serif;
+  min-width: 250px;
+  overflow: hidden;
+  overflow-wrap: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.technical-id,
+.technical-line {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: normal;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.technical-line {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+
 .readers-table td {
   vertical-align: middle;
 }
@@ -886,6 +932,7 @@ textarea {
   align-items: center;
   display: inline-flex;
   gap: 6px;
+  white-space: nowrap;
 }
 
 .audit-detail-row td {
@@ -904,6 +951,99 @@ textarea {
   display: grid;
   gap: 10px;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.audit-action-grid {
+  align-items: stretch;
+}
+
+.audit-action-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 310px;
+}
+
+.audit-action-panel h2 {
+  margin-bottom: 18px;
+}
+
+.audit-panel-body {
+  align-content: start;
+  display: grid;
+  flex: 1;
+  gap: 12px;
+}
+
+.audit-control-grid {
+  align-items: end;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(120px, 0.42fr) minmax(260px, 1fr);
+}
+
+.audit-control-grid .field,
+.audit-control-grid .input,
+.audit-control-grid .select,
+.audit-action-panel .field,
+.audit-action-panel .input,
+.audit-action-panel .select,
+.audit-action-panel .textarea {
+  min-width: 0;
+  width: 100%;
+}
+
+.audit-summary-strip {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.audit-summary-strip span {
+  align-content: start;
+  background: rgba(4, 12, 15, 0.36);
+  border: 1px solid var(--line);
+  display: grid;
+  gap: 4px;
+  min-height: 126px;
+  min-width: 0;
+  padding: 16px;
+}
+
+.audit-summary-strip small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.audit-summary-strip strong {
+  color: var(--text);
+  display: block;
+  font-size: 14px;
+  line-height: 1.25;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-panel-footer {
+  align-items: center;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: flex-start;
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.audit-panel-footer .button {
+  min-width: 220px;
+  justify-content: center;
+}
+
+.audit-tags-textarea {
+  min-height: 126px;
+  resize: none;
 }
 
 .audit-summary-card {
@@ -1514,6 +1654,29 @@ textarea {
   justify-self: end;
 }
 
+.group-summary .button,
+.group-summary .badge,
+.group-date {
+  height: 38px;
+  min-height: 38px;
+}
+
+.group-summary .button,
+.group-summary .badge {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.group-summary .button svg {
+  height: 16px;
+  width: 16px;
+}
+
+.group-summary .badge {
+  padding: 0 10px;
+}
+
 .group-meta {
   border-top: 1px solid var(--line);
   color: var(--muted);
@@ -1585,6 +1748,10 @@ button.compact-main {
   display: flex;
   flex-wrap: wrap;
   gap: 5px 14px;
+}
+
+.compact-meta-line .technical-line {
+  max-width: min(220px, 100%);
 }
 
 .compact-badges {
@@ -1700,6 +1867,7 @@ button.compact-main {
 .audit-list-item span {
   color: var(--muted);
   font-size: 13px;
+  max-width: 100%;
 }
 
 .actions-cell {
@@ -2006,6 +2174,11 @@ button.compact-main {
     align-items: flex-start;
     flex-direction: column;
   }
+
+  .audit-control-grid,
+  .audit-summary-strip {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
@@ -2046,5 +2219,9 @@ button.compact-main {
 
   .inline-resolution-panel .resolution-form .settings-actions {
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  }
+
+  .audit-panel-footer .button {
+    width: 100%;
   }
 }
