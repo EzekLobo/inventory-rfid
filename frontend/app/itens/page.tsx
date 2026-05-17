@@ -39,7 +39,7 @@ export default function ItensPage() {
       setPageData(response);
       setPage(nextPage);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Nao foi possivel carregar itens.");
+      setError(err instanceof Error ? err.message : "Não foi possível carregar itens.");
     } finally {
       setLoading(false);
     }
@@ -56,7 +56,7 @@ export default function ItensPage() {
       const timeline = await api.listTimeline({ item_id: item.id, page_size: 25 });
       setTimelineByItem((current) => ({ ...current, [item.id]: timeline.results }));
     } catch (err) {
-      setTimelineError(err instanceof Error ? err.message : "Nao foi possivel carregar historico do item.");
+      setTimelineError(err instanceof Error ? err.message : "Não foi possível carregar histórico do item.");
     } finally {
       setTimelineLoadingId(null);
     }
@@ -76,8 +76,8 @@ export default function ItensPage() {
     <section className="content-band">
       <div className="section-head">
         <div>
-          <h1>Patrimonio</h1>
-          <p>Itens organizados por local logico para facilitar a busca e a conferencia.</p>
+          <h1>Patrimônio</h1>
+          <p>Itens organizados por local lógico para facilitar a busca e a conferência.</p>
         </div>
       </div>
 
@@ -138,7 +138,7 @@ export default function ItensPage() {
                               <strong>{item.nome}</strong>
                             </span>
                             <span>Tag {item.tag_id}</span>
-                            <span>Fisico: {item.local_fisico_nome || "-"}</span>
+                            <span>Físico: {item.local_fisico_nome || "-"}</span>
                           </button>
                           <div className="compact-badges">
                             {hasLocationDivergence(item) ? (
@@ -177,7 +177,7 @@ function groupByLogicalLocation(items: ItemPatrimonial[]): LocalGroup[] {
   const groups = new Map<string, LocalGroup>();
   items.forEach((item) => {
     const id = item.local_logico_id ? String(item.local_logico_id) : "sem-local-logico";
-    const title = item.local_logico_nome || "Sem local logico";
+    const title = item.local_logico_nome || "Sem local lógico";
     const group = groups.get(id) || { id, title, items: [], divergentes: 0, inativos: 0 };
     group.items.push(item);
     if (hasLocationDivergence(item)) group.divergentes += 1;
@@ -214,15 +214,15 @@ function ItemTimeline({
       <div className="item-timeline-head">
         <div>
           <strong>
-            <History size={17} /> Historico de {item.nome}
+            <History size={17} /> Histórico de {item.nome}
           </strong>
           <span>
-            Tag {item.tag_id} | logico: {item.local_logico_nome || "-"} | fisico: {item.local_fisico_nome || "-"}
+            Tag {item.tag_id} | lógico: {item.local_logico_nome || "-"} | físico: {item.local_fisico_nome || "-"}
           </span>
         </div>
       </div>
 
-      {loading ? <LoadingState label="Carregando historico do item" /> : null}
+      {loading ? <LoadingState label="Carregando histórico do item" /> : null}
       {error ? <ErrorState message={error} /> : null}
       {!loading && !error && events.length === 0 ? <EmptyState label="Nenhum evento registrado para este item." /> : null}
 
@@ -252,7 +252,7 @@ function metadataSummary(metadata: Record<string, unknown>) {
     antenna_id: "leitor",
     motivo: "motivo",
     tipo: "tipo",
-    inconsistencia_id: "inconsistencia"
+    inconsistência_id: "inconsistência"
   };
   return Object.keys(labels)
     .map((key) => {

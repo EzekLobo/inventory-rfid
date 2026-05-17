@@ -441,9 +441,8 @@ export default function AuditoriaPage() {
               sido lidas pelo RFID. Se deixar vazio, a simulação considera que nenhuma tag foi encontrada.
             </p>
             <button
-              className="button"
               disabled={!canAudit || submitting || !simulationAntennaId}
-              style={{ marginTop: 12 }}
+              className="button mt-3"
               type="button"
               onClick={sendAuditResult}
             >
@@ -455,7 +454,7 @@ export default function AuditoriaPage() {
       ) : null}
 
       {result ? (
-        <div className="grid stats" style={{ marginTop: 24 }}>
+        <div className="grid stats mt-6">
           <StatCard label="Esperados" value={result.audit.esperados ?? "-"} />
           <StatCard label="Encontrados" value={result.audit.encontrados} tone="green" />
           <StatCard label="Não encontrados" value={result.audit.nao_encontrados} tone="red" />
@@ -465,7 +464,7 @@ export default function AuditoriaPage() {
         </div>
       ) : null}
 
-      <article className="panel" style={{ marginTop: 24 }}>
+      <article className="panel mt-6">
         <h2>Auditorias</h2>
         <div className="table-wrap">
           <table className="data-table audit-table">

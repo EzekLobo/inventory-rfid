@@ -30,7 +30,7 @@ const emptyFilters: LogFilters = {
 const tipoOptions = [
   { value: "", label: "Todos" },
   { value: "movimentacao", label: "Movimentação" },
-  { value: "inconsistencia", label: "Inconsistência" },
+  { value: "inconsistência", label: "Inconsistência" },
   { value: "rastro", label: "Rastro" },
   { value: "baixa", label: "Baixa" },
   { value: "sistema", label: "Sistema" }
@@ -216,7 +216,7 @@ export default function LogPage() {
                   <th>Item</th>
                   <th>Mensagem</th>
                   <th>Detalhes</th>
-                  <th>Usuário</th>
+                  <th>Usuario</th>
                 </tr>
               </thead>
               <tbody>
@@ -338,7 +338,7 @@ function fromApiDate(value: string) {
 }
 
 function metadataSummary(metadata: Record<string, unknown>) {
-  const keys = ["evento", "tag_id", "local_id", "antenna_id", "motivo", "tipo", "inconsistencia_id"];
+  const keys = ["evento", "tag_id", "local_id", "antenna_id", "motivo", "tipo", "inconsistência_id"];
   const parts = keys
     .map((key) => {
       const value = metadata[key];
@@ -357,7 +357,7 @@ function labelForMetadata(key: string) {
     antenna_id: "leitor",
     motivo: "motivo",
     tipo: "tipo",
-    inconsistencia_id: "inconsistencia"
+    inconsistência_id: "inconsistência"
   };
   return labels[key] || key;
 }

@@ -182,7 +182,7 @@ export default function AntenasPage() {
                     <td>{antena.ultimo_ping ? new Date(antena.ultimo_ping).toLocaleString("pt-BR") : "-"}</td>
                     <td className="actions-cell">
                       <div className="action-buttons">
-                        {!canSync && !canAudit ? <span className="muted-text">Sem permissoes</span> : null}
+                        {!canSync && !canAudit ? <span className="muted-text">Sem permissões</span> : null}
                         {canSync ? (
                         <button
                           className="button action-button"

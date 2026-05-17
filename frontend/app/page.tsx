@@ -82,7 +82,7 @@ export default function HomePage() {
               <StatCard label="Inconsistências abertas" value={stats.inconsistencias} tone="red" />
             </div>
 
-            <div className="content-band" style={{ paddingLeft: 0, paddingRight: 0 }}>
+            <div className="stack-section">
               <div className="section-head">
                 <div>
                   <h2>Operação</h2>
@@ -162,7 +162,7 @@ export default function HomePage() {
                 </article>
               </div>
 
-              <article className="panel" style={{ marginTop: 18 }}>
+              <article className="panel mt-4">
                 <h3>
                   <Activity size={20} /> Atividade recente
                 </h3>

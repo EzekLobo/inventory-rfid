@@ -100,7 +100,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
         }
         const detail = typeof data === "object" && data !== null
           ? (data as any).detail || (data as any).non_field_errors?.[0]
-          : String(data || "Falha na comunicacao com a API.");
+          : String(data || "Falha na comunicação com a API.");
         throw new Error(String(detail));
       }
       return data as T;

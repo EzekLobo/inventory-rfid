@@ -21,7 +21,7 @@ import { PaginationControls } from "@/components/ui/PaginationControls";
 
 const labels: Record<string, string> = {
   local_divergente: "Local divergente",
-  nao_encontrado: "Nao encontrado",
+  nao_encontrado: "Não encontrado",
   tag_desconhecida: "Tag desconhecida"
 };
 
@@ -69,7 +69,7 @@ export default function InconsistenciasPage() {
   const [unknownForm, setUnknownForm] = useState<UnknownTagForm>({
     nome: "",
     local_id: "",
-    motivo: "tag cadastrada a partir de inconsistencia"
+    motivo: "tag cadastrada a partir de inconsistência"
   });
   const [associateItemId, setAssociateItemId] = useState<number | "">("");
 
@@ -90,7 +90,7 @@ export default function InconsistenciasPage() {
       setItens(itensData.results);
       setPage(nextPage);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Nao foi possivel carregar inconsistencias.");
+      setError(err instanceof Error ? err.message : "Não foi possível carregar inconsistências.");
     } finally {
       setLoading(false);
     }
@@ -131,7 +131,7 @@ export default function InconsistenciasPage() {
     setUnknownForm({
       nome: item.item_nome || "",
       local_id: item.local_fisico_id || "",
-      motivo: "tag cadastrada a partir de inconsistencia"
+      motivo: "tag cadastrada a partir de inconsistência"
     });
   }
 
@@ -158,10 +158,10 @@ export default function InconsistenciasPage() {
     try {
       if (selectedMode === "confirmar-local") {
         await api.confirmarLocalInconsistencia(activeInconsistencia.id, reasonOrDefault(motivo, selectedMode));
-        setSuccess("Local logico atualizado e inconsistencia resolvida.");
+        setSuccess("Local lógico atualizado e inconsistência resolvida.");
       } else if (selectedMode === "resolver") {
         await api.resolverInconsistencia(activeInconsistencia.id, reasonOrDefault(motivo, selectedMode));
-        setSuccess("Inconsistencia resolvida com justificativa registrada.");
+        setSuccess("Inconsistência resolvida com justificativa registrada.");
       } else if (selectedMode === "cadastrar-tag") {
         await api.cadastrarTagDesconhecida(activeInconsistencia.id, {
           nome: unknownForm.nome,
@@ -169,19 +169,19 @@ export default function InconsistenciasPage() {
           local_fisico_id: unknownForm.local_id || null,
           motivo: unknownForm.motivo
         });
-        setSuccess("Tag cadastrada como item patrimonial e inconsistencia resolvida.");
+        setSuccess("Tag cadastrada como item patrimonial e inconsistência resolvida.");
       } else if (selectedMode === "associar-tag") {
         if (!associateItemId) throw new Error("Selecione um item para associar.");
         await api.associarTagDesconhecida(activeInconsistencia.id, {
           item_id: associateItemId,
           motivo: defaultReason("associar-tag")
         });
-        setSuccess("Tag associada ao item existente e inconsistencia resolvida.");
+        setSuccess("Tag associada ao item existente e inconsistência resolvida.");
       }
       setAction(null);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Nao foi possivel resolver a inconsistencia.");
+      setError(err instanceof Error ? err.message : "Não foi possível resolver a inconsistência.");
     } finally {
       setBusy(false);
     }
@@ -191,8 +191,8 @@ export default function InconsistenciasPage() {
     <section className="content-band">
       <div className="section-head">
         <div>
-          <h1>Inconsistencias</h1>
-          <p>Pendencias agrupadas por auditoria para corrigir cada conferencia com contexto.</p>
+          <h1>Inconsistências</h1>
+          <p>Pendências agrupadas por auditoria para corrigir cada conferência com contexto.</p>
         </div>
       </div>
 
@@ -206,12 +206,12 @@ export default function InconsistenciasPage() {
               <select className="select" id="tipo" value={tipo} onChange={(event) => setTipo(event.target.value)}>
                 <option value="">Todos</option>
                 <option value="local_divergente">Local divergente</option>
-                <option value="nao_encontrado">Nao encontrado</option>
+                <option value="nao_encontrado">Não encontrado</option>
                 <option value="tag_desconhecida">Tag desconhecida</option>
               </select>
             </div>
             <div className="field">
-              <label htmlFor="resolvida">Situacao</label>
+              <label htmlFor="resolvida">Situação</label>
               <select
                 className="select"
                 id="resolvida"
@@ -233,7 +233,7 @@ export default function InconsistenciasPage() {
         {success ? <div className="process-feedback done">{success}</div> : null}
         {loading ? <LoadingState /> : null}
         {error ? <ErrorState message={error} /> : null}
-        {!loading && !error && data.length === 0 ? <EmptyState label="Nenhuma inconsistencia encontrada." /> : null}
+        {!loading && !error && data.length === 0 ? <EmptyState label="Nenhuma inconsistência encontrada." /> : null}
 
         {!loading && !error && groups.length > 0 ? (
           <div className="grouped-list">
@@ -273,8 +273,8 @@ export default function InconsistenciasPage() {
                               <span className="compact-meta-line">
                                 <span>{labels[item.tipo] || item.tipo}</span>
                                 <span>Tag {item.tag_id || "-"}</span>
-                                <span>Logico: {item.local_logico_nome || item.local_logico_id || "-"}</span>
-                                <span>Fisico: {item.local_fisico_nome || item.local_fisico_id || "-"}</span>
+                                <span>Lógico: {item.local_logico_nome || item.local_logico_id || "-"}</span>
+                                <span>Físico: {item.local_fisico_nome || item.local_fisico_id || "-"}</span>
                               </span>
                             </div>
                             <div className="compact-badges">
@@ -373,10 +373,10 @@ function groupByAudit(items: Inconsistencia[]): AuditGroup[] {
 
 function ActionButtons({ active, canResolve, item, onStart }: { active: boolean; canResolve: boolean; item: Inconsistencia; onStart: (item: Inconsistencia) => void }) {
   if (item.resolvida) {
-    return <span className="muted-text">Sem acoes</span>;
+    return <span className="muted-text">Sem ações</span>;
   }
   if (!canResolve) {
-    return <span className="muted-text">Sem permissao</span>;
+    return <span className="muted-text">Sem permissão</span>;
   }
 
   return (
@@ -420,7 +420,7 @@ function ResolutionHeader({ inconsistencia }: { inconsistencia: Inconsistencia }
   return (
     <div className="resolution-head">
       <div>
-        <h2>Resolver inconsistencia</h2>
+        <h2>Resolver inconsistência</h2>
         <p className="resolution-context">
           {labels[inconsistencia.tipo]} - {inconsistencia.item_nome || inconsistencia.tag_id || `#${inconsistencia.id}`}
           {inconsistencia.local_fisico_nome ? ` - ${inconsistencia.local_fisico_nome}` : ""}
@@ -481,7 +481,7 @@ function ResolutionFormFields({
       <span>Justificativa</span>
       <textarea
         className="textarea compact"
-        placeholder={`Sugestao: ${defaultReason(mode)}`}
+        placeholder={`Sugestão: ${defaultReason(mode)}`}
         value={motivo}
         onChange={(event) => setMotivo(event.target.value)}
       />
@@ -526,9 +526,9 @@ function UnknownTagFields({
 
 function defaultReason(mode: ActionMode) {
   const reasons: Record<ActionMode, string> = {
-    "confirmar-local": "local atual confirmado como novo local logico",
+    "confirmar-local": "local atual confirmado como novo local lógico",
     resolver: "resolucao manual com justificativa",
-    "cadastrar-tag": "tag cadastrada a partir de inconsistencia",
+    "cadastrar-tag": "tag cadastrada a partir de inconsistência",
     "associar-tag": "tag associada a item existente"
   };
   return reasons[mode];
@@ -552,14 +552,14 @@ function modesForType(tipo: string) {
     return [
       {
         mode: "confirmar-local" as const,
-        label: "Atualizar local logico",
-        description: "Confirma este local fisico como o novo local esperado do item.",
+        label: "Atualizar local lógico",
+        description: "Confirma este local físico como o novo local esperado do item.",
         icon: <MapPinCheck size={18} />
       },
       {
         mode: "resolver" as const,
         label: "Resolver com justificativa",
-        description: "Fecha a inconsistencia sem alterar o cadastro do item.",
+        description: "Fecha a inconsistência sem alterar o cadastro do item.",
         icon: <Check size={18} />
       }
     ];
@@ -570,19 +570,19 @@ function modesForType(tipo: string) {
       {
         mode: "cadastrar-tag" as const,
         label: "Cadastrar novo item",
-        description: "Cria um patrimonio com esta tag e resolve a leitura.",
+        description: "Cria um patrimônio com esta tag e resolve a leitura.",
         icon: <FilePlus2 size={18} />
       },
       {
         mode: "associar-tag" as const,
         label: "Associar a item existente",
-        description: "Vincula esta tag a um item ja cadastrado.",
+        description: "Vincula esta tag a um item já cadastrado.",
         icon: <Link2 size={18} />
       },
       {
         mode: "resolver" as const,
         label: "Ignorar leitura",
-        description: "Fecha a inconsistencia registrando uma justificativa.",
+        description: "Fecha a inconsistência registrando uma justificativa.",
         icon: <ShieldQuestion size={18} />
       }
     ];
@@ -592,7 +592,7 @@ function modesForType(tipo: string) {
     {
       mode: "resolver" as const,
       label: "Resolver com justificativa",
-      description: "Fecha a inconsistencia com motivo registrado.",
+      description: "Fecha a inconsistência com motivo registrado.",
       icon: <Check size={18} />
     }
   ];
