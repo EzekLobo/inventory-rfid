@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ChevronDown, ChevronRight, History, MapPin, Search } from "lucide-react";
 import { api } from "@/lib/api";
+import { isLatestRequest, useDelayedLoading } from "@/lib/requestState";
 import type { ItemPatrimonial, PaginatedResponse, TimelineEvento } from "@/lib/types";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/DataState";
 import { PaginationControls } from "@/components/ui/PaginationControls";
@@ -27,21 +28,30 @@ export default function ItensPage() {
   const [timelineLoadingId, setTimelineLoadingId] = useState<number | null>(null);
   const [timelineError, setTimelineError] = useState("");
   const [error, setError] = useState("");
+  const loadRequestId = useRef(0);
+  const timelineRequestId = useRef(0);
+  const showLoading = useDelayedLoading(loading);
+  const showTimelineLoading = useDelayedLoading(timelineLoadingId !== null);
 
   const pageSize = 25;
 
   async function load(term = search, nextPage = page) {
+    const requestId = ++loadRequestId.current;
     if (itens.length === 0) setLoading(true);
     setError("");
     try {
       const response = await api.listItens({ search: term, page: nextPage, page_size: pageSize });
+      if (!isLatestRequest(requestId, loadRequestId)) return;
       setItens(response.results);
       setPageData(response);
       setPage(nextPage);
     } catch (err) {
+      if (!isLatestRequest(requestId, loadRequestId)) return;
       setError(err instanceof Error ? err.message : "Não foi possível carregar itens.");
     } finally {
-      setLoading(false);
+      if (isLatestRequest(requestId, loadRequestId)) {
+        setLoading(false);
+      }
     }
   }
 
@@ -51,14 +61,19 @@ export default function ItensPage() {
     setTimelineError("");
     if (!nextId || timelineByItem[item.id]) return;
 
+    const requestId = ++timelineRequestId.current;
     setTimelineLoadingId(item.id);
     try {
       const timeline = await api.listTimeline({ item_id: item.id, page_size: 25 });
+      if (!isLatestRequest(requestId, timelineRequestId)) return;
       setTimelineByItem((current) => ({ ...current, [item.id]: timeline.results }));
     } catch (err) {
+      if (!isLatestRequest(requestId, timelineRequestId)) return;
       setTimelineError(err instanceof Error ? err.message : "Não foi possível carregar histórico do item.");
     } finally {
-      setTimelineLoadingId(null);
+      if (isLatestRequest(requestId, timelineRequestId)) {
+        setTimelineLoadingId(null);
+      }
     }
   }
 
@@ -105,7 +120,7 @@ export default function ItensPage() {
           </button>
         </form>
 
-        {loading ? <LoadingState /> : null}
+        {showLoading ? <LoadingState /> : null}
         {error ? <ErrorState message={error} /> : null}
         {!loading && !error && itens.length === 0 ? <EmptyState label="Nenhum item encontrado." /> : null}
 
@@ -154,7 +169,7 @@ export default function ItensPage() {
                                 error={timelineError}
                                 events={timelineByItem[item.id] || []}
                                 item={item}
-                                loading={timelineLoadingId === item.id}
+                                loading={showTimelineLoading && timelineLoadingId === item.id}
                               />
                             </div>
                           ) : null}

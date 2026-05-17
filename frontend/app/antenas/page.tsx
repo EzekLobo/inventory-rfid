@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Play, Radar, RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
+import { isLatestRequest, useDelayedLoading } from "@/lib/requestState";
 import { useAuth } from "@/context/AuthContext";
 import type { AcionamentoResponse, Antena } from "@/lib/types";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/DataState";
@@ -30,17 +31,24 @@ export default function AntenasPage() {
   const [activeProcess, setActiveProcess] = useState<ActiveProcess | null>(null);
   const [finishedMessage, setFinishedMessage] = useState("");
   const [now, setNow] = useState(Date.now());
+  const loadRequestId = useRef(0);
+  const showLoading = useDelayedLoading(loading);
 
   async function load() {
+    const requestId = ++loadRequestId.current;
     setLoading(true);
     setError("");
     try {
       const response = await api.listAntenas({ page_size: 100 });
+      if (!isLatestRequest(requestId, loadRequestId)) return;
       setAntenas(response.results);
     } catch (err) {
+      if (!isLatestRequest(requestId, loadRequestId)) return;
       setError(err instanceof Error ? err.message : "Não foi possível carregar leitores.");
     } finally {
-      setLoading(false);
+      if (isLatestRequest(requestId, loadRequestId)) {
+        setLoading(false);
+      }
     }
   }
 
@@ -138,7 +146,7 @@ export default function AntenasPage() {
 
         {!activeProcess && finishedMessage ? <div className="process-feedback done">{finishedMessage}</div> : null}
 
-        {loading ? <LoadingState /> : null}
+        {showLoading ? <LoadingState /> : null}
         {error ? <ErrorState message={error} /> : null}
         {!loading && !error && antenas.length === 0 ? <EmptyState label="Nenhum leitor cadastrado." /> : null}
 

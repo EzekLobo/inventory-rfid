@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Antenna, Box, Building2, KeyRound, RefreshCw, Settings, ShieldCheck, UserCog } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
+import { isLatestRequest, useDelayedLoading } from "@/lib/requestState";
 import type { Antena, ItemPatrimonial, Local, Usuario, UserPermissions } from "@/lib/types";
 import { ErrorState, LoadingState } from "@/components/ui/DataState";
 import { AntenaEditor } from "@/components/configuracoes/AntenaEditor";
@@ -67,8 +68,11 @@ export default function ConfiguracoesPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const loadRequestId = useRef(0);
+  const showLoading = useDelayedLoading(loading);
 
   async function load() {
+    const requestId = ++loadRequestId.current;
     setError("");
     if (!currentUser) {
       setError("Usuário não autenticado.");
@@ -83,6 +87,7 @@ export default function ConfiguracoesPage() {
         currentUser.is_admin ? api.listUsuarios({ page_size: 100 }) : Promise.resolve(null),
         currentUser.is_admin ? api.listPermissoesTecnico() : Promise.resolve(null)
       ]);
+      if (!isLatestRequest(requestId, loadRequestId)) return;
       setLocais(locaisData.results);
       setAntenas(antenasData.results);
       setItens(itensData.results);
@@ -90,9 +95,12 @@ export default function ConfiguracoesPage() {
       setPermissoes(permissoesData);
       setAntenaForm((current) => ({ ...current, local_id: current.local_id || locaisData.results[0]?.id || 0 }));
     } catch (err) {
+      if (!isLatestRequest(requestId, loadRequestId)) return;
       setError(err instanceof Error ? err.message : "Não foi possível carregar configurações.");
     } finally {
-      setLoading(false);
+      if (isLatestRequest(requestId, loadRequestId)) {
+        setLoading(false);
+      }
     }
   }
 
@@ -284,7 +292,7 @@ export default function ConfiguracoesPage() {
         </button>
       </div>
 
-      {loading ? <LoadingState /> : null}
+      {showLoading ? <LoadingState /> : null}
       {error ? <ErrorState message={error} /> : null}
       {success ? <div className="process-feedback done">{success}</div> : null}
 

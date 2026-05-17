@@ -16,20 +16,31 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<CurrentUser | null>(() => api.currentUser());
-  const [authenticated, setAuthenticated] = useState(() => api.isAuthenticated());
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
     async function init() {
-      if (!authenticated) {
-        setLoading(false);
+      const hasAuth = api.isAuthenticated();
+      if (!hasAuth) {
+        if (!cancelled) {
+          setUser(null);
+          setAuthenticated(false);
+          setLoading(false);
+        }
         return;
       }
-      if (user) {
-        setLoading(false);
+
+      const storedUser = api.currentUser();
+      if (storedUser) {
+        if (!cancelled) {
+          setUser(storedUser);
+          setAuthenticated(true);
+          setLoading(false);
+        }
         return;
       }
 
@@ -37,6 +48,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const current = await api.me();
         if (!cancelled) {
           setUser(current);
+          api.rememberUser(current);
+          setAuthenticated(true);
         }
       } catch {
         api.logout();
@@ -56,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [authenticated, user]);
+  }, []);
 
   const login = async (username: string, password: string) => {
     await api.login(username, password);
@@ -73,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = async () => {
     const current = await api.me();
     setUser(current);
+    api.rememberUser(current);
     setAuthenticated(true);
     return current;
   };

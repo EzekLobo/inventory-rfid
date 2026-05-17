@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Check,
@@ -14,6 +14,7 @@ import {
   ShieldQuestion
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { isLatestRequest, useDelayedLoading } from "@/lib/requestState";
 import { useAuth } from "@/context/AuthContext";
 import type { Inconsistencia, ItemPatrimonial, Local, PaginatedResponse } from "@/lib/types";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/DataState";
@@ -72,27 +73,40 @@ export default function InconsistenciasPage() {
     motivo: "tag cadastrada a partir de inconsistência"
   });
   const [associateItemId, setAssociateItemId] = useState<number | "">("");
+  const loadRequestId = useRef(0);
+  const showLoading = useDelayedLoading(loading);
 
   const pageSize = 25;
 
   async function load(nextPage = page) {
+    const requestId = ++loadRequestId.current;
     if (data.length === 0) setLoading(true);
     setError("");
     try {
-      const [inconsistenciasData, locaisData, itensData] = await Promise.all([
-        api.listInconsistencias({ resolvida, tipo, page: nextPage, page_size: pageSize }),
-        api.listLocais({ page_size: 100 }),
-        api.listItens({ page_size: 100 })
-      ]);
+      const inconsistenciasData = await api.listInconsistencias({ resolvida, tipo, page: nextPage, page_size: pageSize });
+      if (!isLatestRequest(requestId, loadRequestId)) return;
       setData(inconsistenciasData.results);
       setPageData(inconsistenciasData);
-      setLocais(locaisData.results);
-      setItens(itensData.results);
       setPage(nextPage);
+      setLoading(false);
+
+      try {
+        const [locaisData, itensData] = await Promise.all([api.listLocais({ page_size: 100 }), api.listItens({ page_size: 100 })]);
+        if (!isLatestRequest(requestId, loadRequestId)) return;
+        setLocais(locaisData.results);
+        setItens(itensData.results);
+      } catch (lookupError) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[inconsistencias] Falha ao carregar dados auxiliares", lookupError);
+        }
+      }
     } catch (err) {
+      if (!isLatestRequest(requestId, loadRequestId)) return;
       setError(err instanceof Error ? err.message : "Não foi possível carregar inconsistências.");
     } finally {
-      setLoading(false);
+      if (isLatestRequest(requestId, loadRequestId)) {
+        setLoading(false);
+      }
     }
   }
 
@@ -231,7 +245,7 @@ export default function InconsistenciasPage() {
         </div>
 
         {success ? <div className="process-feedback done">{success}</div> : null}
-        {loading ? <LoadingState /> : null}
+        {showLoading ? <LoadingState /> : null}
         {error ? <ErrorState message={error} /> : null}
         {!loading && !error && data.length === 0 ? <EmptyState label="Nenhuma inconsistência encontrada." /> : null}
 

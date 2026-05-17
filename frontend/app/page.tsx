@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Activity, AlertTriangle, Antenna, RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
+import { isLatestRequest, useDelayedLoading } from "@/lib/requestState";
 import type { Antena, Inconsistencia, OperacionalResumo, TimelineEvento } from "@/lib/types";
 import { ErrorState, LoadingState } from "@/components/ui/DataState";
 import { StatCard } from "@/components/ui/StatCard";
@@ -14,8 +15,11 @@ export default function HomePage() {
   const [resumo, setResumo] = useState<OperacionalResumo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const loadRequestId = useRef(0);
+  const showLoading = useDelayedLoading(loading);
 
   async function load() {
+    const requestId = ++loadRequestId.current;
     setLoading(true);
     setError("");
     try {
@@ -25,14 +29,18 @@ export default function HomePage() {
         api.listInconsistencias({ resolvida: "false", page_size: 5 }),
         api.listTimeline({ page_size: 8 })
       ]);
+      if (!isLatestRequest(requestId, loadRequestId)) return;
       setAntenas(antenasData.results);
       setResumo(resumoData);
       setInconsistencias(inconsistenciasData.results);
       setTimeline(timelineData.results);
     } catch (err) {
+      if (!isLatestRequest(requestId, loadRequestId)) return;
       setError(err instanceof Error ? err.message : "Não foi possível carregar o painel.");
     } finally {
-      setLoading(false);
+      if (isLatestRequest(requestId, loadRequestId)) {
+        setLoading(false);
+      }
     }
   }
 
@@ -70,7 +78,7 @@ export default function HomePage() {
       </section>
 
       <section className="content-band">
-        {loading ? <LoadingState label="Carregando painel operacional" /> : null}
+        {showLoading ? <LoadingState label="Carregando painel operacional" /> : null}
         {error ? <ErrorState message={error} /> : null}
 
         {!loading && !error ? (

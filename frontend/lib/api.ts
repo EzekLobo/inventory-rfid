@@ -22,10 +22,12 @@ const RFID_TOKEN = process.env.NEXT_PUBLIC_RFID_INGEST_TOKEN || "dev-rfid-token"
 const AUTH_KEY = "inventory-rfid-auth";
 const USER_KEY = "inventory-rfid-user";
 const CACHE_TTL_MS = 30_000;
+const REQUEST_TIMEOUT_MS = 10_000;
 
 type RequestOptions = RequestInit & {
   auth?: boolean;
   rfid?: boolean;
+  timeoutMs?: number;
   useCache?: boolean;
 };
 
@@ -49,13 +51,55 @@ type TimelineFilters = PaginationParams & {
 
 const cache = new Map<string, CacheEntry<unknown>>();
 
+function isDevelopment() {
+  return process.env.NODE_ENV === "development";
+}
+
+function elapsedMs(startedAt: number) {
+  return Math.round(performance.now() - startedAt);
+}
+
+function logRequest(path: string, method: string, status: string | number, startedAt: number) {
+  if (!isDevelopment()) return;
+  console.debug(`[api] ${method} ${path} -> ${status} (${elapsedMs(startedAt)}ms)`);
+}
+
+function requestTimeoutError(path: string, timeoutMs: number) {
+  return new Error(`Tempo esgotado ao carregar ${path} (${Math.round(timeoutMs / 1000)}s). Verifique se a API esta online.`);
+}
+
+function composeSignal(signal: AbortSignal | null | undefined, timeoutMs: number, onTimeout: () => void) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => {
+    onTimeout();
+    controller.abort();
+  }, timeoutMs);
+
+  const abortFromParent = () => controller.abort(signal?.reason);
+  if (signal) {
+    if (signal.aborted) {
+      abortFromParent();
+    } else {
+      signal.addEventListener("abort", abortFromParent, { once: true });
+    }
+  }
+
+  return {
+    signal: controller.signal,
+    cleanup() {
+      window.clearTimeout(timeoutId);
+      signal?.removeEventListener("abort", abortFromParent);
+    }
+  };
+}
+
 function authHeader() {
   if (typeof window === "undefined") return null;
   return window.localStorage.getItem(AUTH_KEY);
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { auth, rfid, useCache: shouldUseCache, ...fetchOptions } = options;
+  const { auth, rfid, timeoutMs = REQUEST_TIMEOUT_MS, useCache: shouldUseCache, ...fetchOptions } = options;
   const method = fetchOptions.method || "GET";
   const cacheKey = `${method}:${path}`;
   const useCache = shouldUseCache === true && method === "GET";
@@ -79,11 +123,19 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     }
   }
 
+  const startedAt = performance.now();
+  let timedOut = false;
+  const { signal, cleanup } = composeSignal(fetchOptions.signal, timeoutMs, () => {
+    timedOut = true;
+  });
+
   const promise = fetch(`${API_BASE_URL}${path}`, {
     ...fetchOptions,
-    headers
+    headers,
+    signal
   })
     .then(async (response) => {
+      logRequest(path, method, response.status, startedAt);
       const text = await response.text();
       let data: unknown = null;
       if (text) {
@@ -111,7 +163,14 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     })
     .catch((error) => {
       if (useCache) cache.delete(cacheKey);
+      logRequest(path, method, timedOut ? "timeout" : "failed", startedAt);
+      if (timedOut) {
+        throw requestTimeoutError(path, timeoutMs);
+      }
       throw error;
+    })
+    .finally(() => {
+      cleanup();
     });
 
   if (useCache) cache.set(cacheKey, { promise, expiresAt: Date.now() + CACHE_TTL_MS });
@@ -186,6 +245,10 @@ export const api = {
 
   me() {
     return request<CurrentUser>("/auth/me/", { useCache: false });
+  },
+
+  rememberUser(user: CurrentUser) {
+    storeUser(user);
   },
 
   async trocarSenha(payload: { senha_atual: string; nova_senha: string }, username: string) {

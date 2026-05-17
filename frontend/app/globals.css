@@ -1099,6 +1099,35 @@ textarea {
   min-width: 126px;
 }
 
+.log-tabs {
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 8px;
+  margin: 0 0 14px;
+  overflow-x: auto;
+  padding: 0 0 12px;
+}
+
+.log-tab {
+  background: rgba(5, 18, 18, 0.72);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 36px;
+  padding: 0 14px;
+  white-space: nowrap;
+}
+
+.log-tab.active,
+.log-tab:hover {
+  background: rgba(87, 244, 208, 0.1);
+  border-color: rgba(87, 244, 208, 0.42);
+  color: #ffffff;
+}
+
 .date-field {
   display: block;
   position: relative;
@@ -1152,6 +1181,199 @@ textarea {
 .log-table td {
   font-size: 13px;
   vertical-align: middle;
+}
+
+.log-table th:first-child,
+.log-table td:first-child {
+  padding-right: 0;
+  width: 42px;
+}
+
+.log-table th:nth-child(2),
+.log-table td:nth-child(2) {
+  width: 180px;
+}
+
+.log-table th:nth-child(3),
+.log-table td:nth-child(3) {
+  width: 150px;
+}
+
+.log-table th:nth-child(5),
+.log-table td:nth-child(5) {
+  width: 150px;
+}
+
+.log-row {
+  cursor: pointer;
+}
+
+.log-row.active td {
+  background: rgba(87, 244, 208, 0.055);
+  border-bottom-color: rgba(87, 244, 208, 0.18);
+}
+
+.log-expand-button {
+  color: var(--muted);
+}
+
+.log-context-badge {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.log-context-badge.auditoria {
+  background: rgba(87, 244, 208, 0.12);
+  border-color: rgba(87, 244, 208, 0.28);
+  color: #c8fff3;
+}
+
+.log-context-badge.inconsistencia {
+  background: rgba(249, 115, 22, 0.12);
+  border-color: rgba(249, 115, 22, 0.3);
+  color: #ffd7b8;
+}
+
+.log-context-badge.item {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.3);
+  color: #c7ecff;
+}
+
+.log-context-badge.sistema {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.28);
+  color: #dce6ef;
+}
+
+.log-row-expanded td {
+  background: rgba(8, 28, 28, 0.78);
+  padding: 0 10px 14px 52px;
+}
+
+.log-detail-panel {
+  border: 1px solid var(--line);
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.log-detail-sections {
+  display: grid;
+  gap: 14px;
+}
+
+.log-detail-section {
+  min-width: 0;
+}
+
+.log-detail-list {
+  border: 1px solid rgba(148, 180, 175, 0.14);
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.log-detail-line {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(140px, 0.32fr) minmax(0, 1fr);
+  min-width: 0;
+  padding: 9px 11px;
+}
+
+.log-detail-line + .log-detail-line {
+  border-top: 1px solid rgba(148, 180, 175, 0.12);
+}
+
+.log-detail-line dt {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.log-detail-line dd {
+  color: #f0fbf8;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.log-technical-details {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  padding-top: 10px;
+}
+
+.log-technical-details summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.log-technical-details .log-detail-grid {
+  margin-top: 10px;
+}
+
+.log-message-box {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.log-message-box span,
+.log-detail-title,
+.log-detail-item span {
+  color: var(--muted);
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.log-message-box p {
+  color: #f0fbf8;
+  line-height: 1.45;
+  margin: 0;
+  max-width: 920px;
+}
+
+.log-detail-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.log-detail-item {
+  background: rgba(5, 18, 18, 0.58);
+  border: 1px solid rgba(148, 180, 175, 0.16);
+  min-width: 0;
+  padding: 10px;
+}
+
+.log-detail-item strong {
+  color: #dbe8e6;
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.log-empty-detail {
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  padding: 12px;
 }
 
 .log-subtext {

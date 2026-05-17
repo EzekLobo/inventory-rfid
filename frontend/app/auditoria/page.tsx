@@ -1,8 +1,9 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, ChevronDown, ChevronRight, HelpCircle, Play, RefreshCw, Send, ShieldAlert } from "lucide-react";
 import { api } from "@/lib/api";
+import { isLatestRequest, useDelayedLoading } from "@/lib/requestState";
 import { useAuth } from "@/context/AuthContext";
 import type {
   Antena,
@@ -109,8 +110,11 @@ export default function AuditoriaPage() {
   const [activeProcess, setActiveProcess] = useState<ActiveProcess | null>(null);
   const [finishedMessage, setFinishedMessage] = useState("");
   const [now, setNow] = useState(Date.now());
+  const loadRequestId = useRef(0);
+  const showLoading = useDelayedLoading(loading);
 
   async function load() {
+    const requestId = ++loadRequestId.current;
     setError("");
     try {
       const [antenasData, jobsData, processedData, itensData] = await Promise.all([
@@ -119,6 +123,7 @@ export default function AuditoriaPage() {
         api.listAuditoriasProcessadas({ page_size: 25 }),
         api.listItens({ page_size: 100 })
       ]);
+      if (!isLatestRequest(requestId, loadRequestId)) return;
       setAntenas(antenasData.results);
       setSimulationAntennaId((current) => current || antenasData.results[0]?.id || "");
       setSelectedAntennaIds((current) => {
@@ -129,9 +134,12 @@ export default function AuditoriaPage() {
       setProcessedAudits(processedData.results);
       setItens(itensData.results);
     } catch (err) {
+      if (!isLatestRequest(requestId, loadRequestId)) return;
       setError(err instanceof Error ? err.message : "Não foi possível carregar auditorias.");
     } finally {
-      setLoading(false);
+      if (isLatestRequest(requestId, loadRequestId)) {
+        setLoading(false);
+      }
     }
   }
 
@@ -311,7 +319,7 @@ export default function AuditoriaPage() {
         </button>
       </div>
 
-      {loading ? <LoadingState /> : null}
+      {showLoading ? <LoadingState /> : null}
       {error ? <ErrorState message={error} /> : null}
 
       {activeProcess ? (
