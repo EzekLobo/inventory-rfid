@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from datetime import timedelta
+import logging
+from time import perf_counter
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
@@ -14,6 +17,16 @@ from core.domain.models import (
     NotificacaoInconsistencia,
     TimelineEvento,
 )
+
+
+logger = logging.getLogger(__name__)
+
+
+def log_debug_timing(label: str, started_at: float, **details) -> None:
+    if not settings.DEBUG:
+        return
+    elapsed_ms = (perf_counter() - started_at) * 1000
+    logger.debug("%s executado em %.2fms %s", label, elapsed_ms, details)
 
 
 class SyncManager:
@@ -789,6 +802,7 @@ class AuditoriaManager:
 
     @transaction.atomic
     def finalize_expired_jobs(self) -> int:
+        started_at = perf_counter()
         now = timezone.now()
         jobs = list(
             AuditoriaJob.objects.filter(
@@ -797,6 +811,7 @@ class AuditoriaManager:
             )
         )
         if not jobs:
+            log_debug_timing("finalize_expired_jobs", started_at, updated=0)
             return 0
 
         for job in jobs:
@@ -816,6 +831,7 @@ class AuditoriaManager:
                 usuario=job.solicitado_por,
                 metadados={"auditoria_job_id": job.id, "evento": "auditoria_concluida"},
             )
+        log_debug_timing("finalize_expired_jobs", started_at, updated=len(jobs))
         return len(jobs)
 
 

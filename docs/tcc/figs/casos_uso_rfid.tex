@@ -4,101 +4,98 @@
 \resizebox{0.98\textwidth}{!}{%
 \begin{tikzpicture}[
     font=\scriptsize,
-    usecase/.style={draw, ellipse, align=center, minimum width=2.70cm, minimum height=0.68cm, fill=blue!5},
-    devicecase/.style={draw, ellipse, align=center, minimum width=2.80cm, minimum height=0.68cm, fill=green!6},
-    internalcase/.style={draw, ellipse, align=center, minimum width=2.60cm, minimum height=0.66cm, fill=yellow!10},
-    exceptioncase/.style={draw, ellipse, align=center, minimum width=2.80cm, minimum height=0.66cm, fill=red!7},
-    conditionalcase/.style={draw, ellipse, align=center, minimum width=2.80cm, minimum height=0.66cm, fill=orange!10},
+    actorlabel/.style={align=center, font=\scriptsize},
+    usecase/.style={
+        draw,
+        ellipse,
+        align=center,
+        minimum width=2.72cm,
+        minimum height=0.62cm,
+        fill=blue!5,
+        inner sep=1pt
+    },
+    admincase/.style={
+        draw,
+        ellipse,
+        align=center,
+        minimum width=2.88cm,
+        minimum height=0.62cm,
+        fill=yellow!10,
+        inner sep=1pt
+    },
+    devicecase/.style={
+        draw,
+        ellipse,
+        align=center,
+        minimum width=2.92cm,
+        minimum height=0.62cm,
+        fill=green!6,
+        inner sep=1pt
+    },
     system/.style={draw, rounded corners=3pt, fill=gray!4},
-    assoc/.style={-, semithick, gray!62},
-    include/.style={dashed, -{Stealth[length=2.1mm,width=1.5mm]}, semithick, gray!72},
-    extend/.style={dashed, -{Stealth[length=2.1mm,width=1.5mm]}, semithick, red!65!black},
-    generalize/.style={-{Triangle[open,length=3.0mm,width=3.2mm]}, semithick, gray!72},
-    legend/.style={draw, rounded corners=2pt, fill=white, align=left, font=\tiny, inner sep=2pt, text width=5.80cm}
+    assoc/.style={-, semithick, gray!65},
+    include/.style={dashed, -{Stealth[length=2.0mm,width=1.4mm]}, semithick, gray!72},
+    generalize/.style={-{Triangle[open,length=3.0mm,width=3.0mm]}, semithick, gray!72}
 ]
 
-\newcommand{\umlactor}[3]{%
-    \draw (#1,#2+0.34) circle (0.095);
-    \draw (#1,#2+0.24) -- (#1,#2-0.17);
-    \draw (#1-0.23,#2+0.08) -- (#1+0.23,#2+0.08);
-    \draw (#1,#2-0.17) -- (#1-0.20,#2-0.47);
-    \draw (#1,#2-0.17) -- (#1+0.20,#2-0.47);
-    \node[align=center] at (#1,#2-0.76) {#3};
+\newcommand{\umlactor}[4]{%
+    \coordinate (#4) at (#1,#2);
+    \draw (#1,#2+0.33) circle (0.09);
+    \draw (#1,#2+0.24) -- (#1,#2-0.16);
+    \draw (#1-0.22,#2+0.07) -- (#1+0.22,#2+0.07);
+    \draw (#1,#2-0.16) -- (#1-0.19,#2-0.45);
+    \draw (#1,#2-0.16) -- (#1+0.19,#2-0.45);
+    \node[actorlabel] at (#1,#2-0.74) {#3};
 }
 
 % Limite do sistema
-\draw[system] (0.65,0.90) rectangle (16.25,-12.35);
-\node[font=\small\bfseries] at (8.40,0.55) {Sistema Web de Inventario RFID};
+\draw[system] (0.45,0.72) rectangle (12.85,-7.20);
+\node[font=\small\bfseries] at (6.65,0.42) {Sistema Web de Inventário RFID};
 
 % Atores externos
-\umlactor{-0.35}{-5.40}{Usuario/\\Administrador}
-\umlactor{17.55}{-0.95}{Comunicador\\intermediario}
-\umlactor{17.55}{-6.20}{Sensor/Leitor\\com rede}
+\umlactor{-0.82}{-2.15}{Usuário/\\Técnico}{tecnico}
+\umlactor{-0.82}{-5.70}{Administrador}{admin}
+\umlactor{14.00}{-1.65}{Comunicador\\intermediário}{comunicador}
+\umlactor{14.00}{-5.55}{Leitor/Gateway\\RFID}{leitor}
 
-% Objetivos do usuario
-\node[usecase] (cadastros) at (2.55,-0.75) {Gerenciar\\cadastros};
-\node[usecase] (consultar) at (2.55,-1.95) {Consultar\\inventario};
-\node[usecase] (iniciar) at (2.55,-3.15) {Iniciar\\leitura};
-\node[usecase] (auditoria) at (2.55,-4.35) {Executar\\auditoria};
-\node[usecase] (inconsistencias) at (2.55,-8.85) {Analisar\\inconsistencias};
-\node[usecase] (historico) at (2.55,-10.05) {Consultar historico\\operacional};
+% Casos de uso humanos
+\node[usecase] (consultar) at (2.72,-0.70) {Consultar painel\\e inventário};
+\node[usecase] (cadastros) at (2.72,-1.78) {Gerenciar\\cadastros};
+\node[usecase] (acionar) at (2.72,-2.86) {Acionar\\leitura};
+\node[usecase] (auditoria) at (2.72,-3.94) {Executar\\auditoria};
+\node[usecase] (inconsistencias) at (2.72,-5.02) {Resolver\\inconsistências};
+\node[usecase] (historico) at (2.72,-6.10) {Consultar\\histórico/log};
 
-% Comportamentos internos do sistema
-\node[internalcase] (janela) at (6.05,-3.55) {Abrir janela\\de leitura};
-\node[internalcase, minimum width=2.75cm] (verificarJanela) at (6.30,-5.35) {Verificar janela\\ativa};
-\node[internalcase, minimum width=2.80cm] (processar) at (8.55,-6.55) {Processar leitura\\RFID};
-\node[internalcase] (validar) at (5.50,-7.25) {Validar\\tags};
-\node[internalcase] (registrar) at (8.55,-8.10) {Registrar\\leitura};
-\node[conditionalcase] (atualizar) at (6.55,-10.10) {Atualizar\\inventario};
-\node[conditionalcase, minimum width=3.05cm] (registrarHist) at (10.30,-10.15) {Registrar historico\\operacional};
-\node[exceptioncase] (registrarInc) at (12.10,-7.85) {Registrar\\inconsistencia};
+% Caso de uso administrativo
+\node[admincase] (usuarios) at (6.35,-6.10) {Gerenciar usuários\\e permissões};
 
-% Casos de uso acionados por dispositivos
-\node[devicecase, minimum width=3.05cm] (comando) at (12.40,-0.90) {Consultar comando\\de leitura};
-\node[devicecase] (evento) at (12.40,-2.35) {Receber evento\\RFID};
-\node[devicecase, minimum width=3.05cm] (presenca) at (10.65,-3.75) {Receber evento\\de presenca};
-\node[devicecase, minimum width=3.05cm] (leituraTags) at (14.00,-5.10) {Receber leitura\\de tags};
-\node[devicecase, minimum width=3.05cm] (resposta) at (14.00,-9.00) {Enviar resposta\\ao dispositivo};
+% Casos de uso de dispositivos e serviço intermediário
+\node[devicecase] (comando) at (10.55,-1.12) {Consultar comando\\de leitura};
+\node[devicecase] (evento) at (10.55,-3.28) {Enviar evento\\RFID};
+\node[devicecase] (tags) at (10.55,-5.44) {Enviar leitura\\de tags};
 
-% Associacoes do usuario
-\foreach \uc in {cadastros,consultar,iniciar,auditoria,inconsistencias,historico}
-  \draw[assoc] (-0.35,-5.40) -- (\uc.west);
+% Associações humanas roteadas pela borda interna para evitar sobreposição.
+\foreach \uc in {consultar,cadastros,acionar,auditoria,inconsistencias,historico}
+  \draw[assoc] (tecnico) -- (0.70,-2.15) |- (\uc.west);
+\draw[assoc] (admin) -- (0.70,-5.70) |- (usuarios.west);
 
-% Associacoes dos dispositivos
-\draw[assoc] (17.55,-0.95) -- (comando.east);
-\draw[assoc] (17.55,-0.95) -- (leituraTags.east);
-\draw[assoc] (17.55,-6.20) -- (leituraTags.east);
-\draw[assoc] (17.55,-6.20) -- ++(-0.40,0) |- (presenca.east);
-\draw[assoc] (resposta.west) -- (17.55,-0.95);
-\draw[assoc] (resposta.west) -- (17.55,-6.20);
+% Administrador herda os objetivos do usuário/técnico.
+\draw[generalize] (admin.north) -- (tecnico.south);
 
-% Relacionamentos UML
-\draw[include] (iniciar.east) -- (janela.west);
-\draw[include] (auditoria.east) -- (janela.west);
-\draw[include] (presenca.west) -- (janela.east);
+% Associações de dispositivos.
+\draw[assoc] (comunicador) -- (12.58,-1.65) |- (comando.east);
+\draw[assoc] (comunicador) -- (12.58,-1.65) |- (tags.east);
+\draw[assoc] (leitor) -- (12.25,-5.55) |- (evento.east);
+\draw[assoc] (leitor) -- (12.25,-5.55) |- (tags.east);
 
-\draw[generalize] (presenca.north east) -- (evento.south west);
-\draw[generalize] (leituraTags.north west) -- (evento.south east);
-
-\draw[include] (leituraTags.west) -- (verificarJanela.east);
-\draw[include] (verificarJanela.south east) -- (processar.north west);
-\draw[include] (processar.south west) -- (validar.north east);
-\draw[include] (processar.south) -- (registrar.north);
-\draw[extend] (atualizar.north east) -- (registrar.south west);
-\draw[include] (processar.south east) -- (registrarHist.north);
-\draw[extend] (registrarInc.west) -- (validar.east);
-\draw[include] (processar.south) -- (resposta.north);
-
-\node[legend] at (12.35,-11.62) {
-    Continua: associacao ator--caso de uso\\
-    Triangulo aberto: especializacao\\
-    Tracejada cinza: \textless\textless include\textgreater\textgreater{} obrigatorio\\
-    Tracejada vermelha: \textcolor{red!65!black}{\textless\textless extend\textgreater\textgreater{} condicional}\\
-    Cond.: janela/auditoria; validacao falha; historico; inconsistencia
-};
+% Relações UML usadas apenas quando o objetivo depende obrigatoriamente de outro.
+\draw[include]
+  (auditoria.east) -- ++(0.54,0) |- node[pos=0.24, right, font=\tiny] {\textless\textless include\textgreater\textgreater} (acionar.east);
+\draw[include]
+  (tags.west) -- ++(-0.54,0) |- node[pos=0.24, left, font=\tiny] {\textless\textless include\textgreater\textgreater} (evento.west);
 
 \end{tikzpicture}
 }
-\caption{Diagrama de casos de uso do sistema de inventario RFID}
+\caption{Diagrama de casos de uso do sistema de inventário RFID}
 \label{fig:casos-uso-rfid}
 \end{figure}

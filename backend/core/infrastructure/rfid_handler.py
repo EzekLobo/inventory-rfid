@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import timedelta
 import json
+import logging
+from time import perf_counter
 from urllib import error, request
 
 from django.utils import timezone
@@ -10,6 +12,16 @@ from django.conf import settings
 
 from core.domain.models import AntenaRFID, AuditoriaJob, AuditoriaLeitorStatus, ItemPatrimonial, LeituraRFID, TimelineEvento
 from core.domain.services import AuditoriaManager, AuditoriaReconciliacaoManager, SyncManager
+
+
+logger = logging.getLogger(__name__)
+
+
+def log_debug_timing(label: str, started_at: float, **details) -> None:
+    if not settings.DEBUG:
+        return
+    elapsed_ms = (perf_counter() - started_at) * 1000
+    logger.debug("%s executado em %.2fms %s", label, elapsed_ms, details)
 
 
 @dataclass
@@ -284,19 +296,24 @@ class RFIDEventProcessor:
         return payload
 
     def deactivate_expired_antennas(self) -> int:
+        started_at = perf_counter()
         now = timezone.now()
         expired = AntenaRFID.objects.filter(ativa=True, ativacao_expira_em__isnull=False, ativacao_expira_em__lte=now)
         updated = expired.update(ativa=False)
         self.auditoria_manager.finalize_expired_jobs()
+        log_debug_timing("deactivate_expired_antennas", started_at, updated=updated)
         return updated
 
     def mark_stale_antennas_offline(self) -> int:
+        started_at = perf_counter()
         timeout_seconds = getattr(settings, "RFID_ONLINE_TIMEOUT_SECONDS", 15)
         stale_limit = timezone.now() - timedelta(seconds=timeout_seconds)
         stale = AntenaRFID.objects.filter(online=True).filter(
             ultimo_ping__isnull=True
         ) | AntenaRFID.objects.filter(online=True, ultimo_ping__lt=stale_limit)
-        return stale.update(online=False, ativa=False)
+        updated = stale.update(online=False, ativa=False)
+        log_debug_timing("mark_stale_antennas_offline", started_at, updated=updated)
+        return updated
 
 
 def normalize_tags(tags: list[str]) -> list[str]:
