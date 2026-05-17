@@ -6,9 +6,9 @@ No Colegiado de Ciência da Computação da Universidade Estadual de Santa Cruz,
 
 A tecnologia de Identificação por Radiofrequência, conhecida como RFID, apresenta-se como alternativa para automatizar parte desse processo. Diferentemente de soluções ópticas, a identificação por radiofrequência permite que etiquetas sejam reconhecidas por leitores compatíveis, sem a mesma dependência de contato visual direto. Essa característica favorece aplicações de inventário, rastreabilidade e auditoria, especialmente quando integrada a sistemas de informação capazes de armazenar, processar e apresentar os eventos de leitura \cite{alwadi2017,budiyanto2024,mashayekhy2022}.
 
-Este trabalho propõe e implementa um protótipo funcional de software para inventário patrimonial baseado em RFID, voltado ao contexto do Colegiado de Ciência da Computação. A solução foi concebida com arquitetura modular, composta por frontend, backend com API REST, banco de dados e processamento de eventos RFID. Em sua concepção escalável, a aplicação pode receber eventos gerados por diferentes dispositivos de captura, incluindo sensores de presença, leitores RFID de maior alcance e antenas instaladas em pontos estratégicos. Para fins de validação prática, entretanto, utilizou-se um leitor RFID de proximidade de baixo custo, disponível para o experimento, com o objetivo de comprovar o funcionamento do fluxo lógico da solução.
+Este trabalho propõe e implementa um protótipo funcional de software para inventário patrimonial baseado em RFID, voltado ao contexto do Colegiado de Ciência da Computação. A solução foi concebida para receber eventos gerados por diferentes dispositivos de captura por meio de uma API padronizada, favorecendo a substituição ou ampliação dos leitores sem comprometer o funcionamento central do sistema. Para fins de validação prática, entretanto, utilizou-se um leitor RFID de proximidade de baixo custo, disponível para o experimento, com o objetivo de comprovar o funcionamento do fluxo lógico da solução.
 
-Essa delimitação é importante para o rigor do trabalho. A validação realizada não tem como objetivo demonstrar o desempenho de uma infraestrutura RFID industrial, nem medir alcance de antenas de longo alcance. O foco está na comprovação do pipeline de software: cadastro de ativos e leitores, captura da identificação da etiqueta, envio do evento à API, processamento da leitura, persistência dos dados, atualização da localização física e geração de registros de auditoria e inconsistências. Essa distinção é coerente com a separação entre validação funcional de sistemas e avaliação completa de desempenho em ambiente operacional \cite{ieee1012}. Assim, a contribuição principal do trabalho está na arquitetura e na implementação do sistema, bem como na demonstração de sua viabilidade funcional em um cenário controlado.
+Essa delimitação é importante para o rigor do trabalho. A validação realizada não tem como objetivo demonstrar o desempenho de uma infraestrutura RFID industrial, nem medir alcance de antenas de longo alcance. O foco está na verificação funcional do software e de sua capacidade de receber eventos de leitura, processá-los e refletir seus efeitos no inventário patrimonial. Essa distinção é coerente com a separação entre validação funcional de sistemas e avaliação completa de desempenho em ambiente operacional \cite{ieee1012}. Assim, a contribuição principal do trabalho está na arquitetura e na implementação do sistema, bem como na demonstração de sua viabilidade funcional em um cenário controlado.
 
 \section{Objetivos}
 
@@ -22,11 +22,10 @@ Os objetivos específicos deste trabalho são:
 
 \begin{enumerate}
     \item Levantar os requisitos essenciais para o controle de ativos patrimoniais no contexto do colegiado.
-    \item Projetar uma arquitetura modular e escalável composta por frontend, backend com API REST, banco de dados e integração com eventos RFID.
-    \item Implementar funcionalidades de cadastro de locais, leitores RFID e itens patrimoniais associados a etiquetas.
-    \item Implementar o fluxo de recebimento, validação, processamento e persistência de leituras RFID por meio de uma interface padronizada para dispositivos de captura.
-    \item Disponibilizar mecanismos de auditoria, histórico operacional e identificação de inconsistências entre inventário lógico e físico.
-    \item Validar funcionalmente o fluxo de leitura, integração, persistência e atualização do inventário com leitor RFID de proximidade de baixo custo.
+    \item Projetar uma arquitetura modular para recebimento e processamento de eventos RFID.
+    \item Implementar um protótipo web para registro, acompanhamento e auditoria de ativos patrimoniais.
+    \item Integrar o protótipo a um leitor RFID de proximidade por meio de uma interface padronizada de eventos.
+    \item Validar funcionalmente o fluxo principal de leitura, processamento e atualização do inventário.
 \end{enumerate}
 
 \section{Motivação e Justificativa}
