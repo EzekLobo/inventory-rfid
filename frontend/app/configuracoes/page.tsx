@@ -1,11 +1,17 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Antenna, Box, Building2, KeyRound, Pencil, Plus, RefreshCw, Save, Settings, ShieldCheck, Trash2, UserCog, X } from "lucide-react";
+import { Antenna, Box, Building2, KeyRound, RefreshCw, Settings, ShieldCheck, UserCog } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
-import type { Antena, CurrentUser, ItemPatrimonial, Local, Usuario, UserPermissions } from "@/lib/types";
+import type { Antena, ItemPatrimonial, Local, Usuario, UserPermissions } from "@/lib/types";
 import { ErrorState, LoadingState } from "@/components/ui/DataState";
+import { AntenaEditor } from "@/components/configuracoes/AntenaEditor";
+import { ItemEditor } from "@/components/configuracoes/ItemEditor";
+import { LocalEditor } from "@/components/configuracoes/LocalEditor";
+import { PasswordEditor } from "@/components/configuracoes/PasswordEditor";
+import { PermissoesEditor } from "@/components/configuracoes/PermissoesEditor";
+import { UsuarioEditor } from "@/components/configuracoes/UsuarioEditor";
 
 type Section = "senha" | "locais" | "leitores" | "itens" | "usuarios" | "permissoes";
 type LocalForm = Omit<Local, "id">;
@@ -36,8 +42,8 @@ const sections = [
   { id: "locais" as const, label: "Locais", icon: Building2 },
   { id: "leitores" as const, label: "Leitores", icon: Antenna },
   { id: "itens" as const, label: "Itens", icon: Box },
-  { id: "usuarios" as const, label: "Usuarios", icon: UserCog, adminOnly: true },
-  { id: "permissoes" as const, label: "Permissoes", icon: ShieldCheck, adminOnly: true }
+  { id: "usuarios" as const, label: "Usuários", icon: UserCog, adminOnly: true },
+  { id: "permissoes" as const, label: "Permissões", icon: ShieldCheck, adminOnly: true }
 ];
 
 export default function ConfiguracoesPage() {
@@ -91,8 +97,9 @@ export default function ConfiguracoesPage() {
   }
 
   useEffect(() => {
+    if (!currentUser) return;
     load();
-  }, []);
+  }, [currentUser]);
 
   const localNameById = useMemo(() => new Map(locais.map((local) => [local.id, local.nome])), [locais]);
   const visibleSections = sections.filter((item) => !item.adminOnly || currentUser?.is_admin);
@@ -143,7 +150,7 @@ export default function ConfiguracoesPage() {
       await api.trocarSenha(passwordForm, currentUser.username);
       setPasswordForm(emptyPassword);
       setSuccess("Senha alterada com sucesso.");
-    }, "Nao foi possivel alterar a senha.");
+    }, "Não foi possível alterar a senha.");
   }
 
   async function saveUsuario(event: FormEvent<HTMLFormElement>) {
@@ -166,15 +173,15 @@ export default function ConfiguracoesPage() {
         await api.createUsuario({ ...userForm, password: userForm.password || "12345678" });
       }
       cancelUserEdit();
-    }, "Nao foi possivel salvar usuario.");
+    }, "Não foi possível salvar usuário.");
   }
 
   async function savePermissoes(next: UserPermissions) {
     await persist(async () => {
       const updated = await api.updatePermissoesTecnico(next);
       setPermissoes(updated);
-      setSuccess("Permissoes do tecnico atualizadas.");
-    }, "Nao foi possivel atualizar permissoes.");
+      setSuccess("Permissões do técnico atualizadas.");
+    }, "Não foi possível atualizar permissões.");
   }
 
   async function removeLocal(id: number) {
@@ -376,467 +383,6 @@ export default function ConfiguracoesPage() {
         </div>
       ) : null}
     </section>
-  );
-}
-
-function LocalEditor(props: {
-  busy: boolean;
-  canManage: boolean;
-  editingId: number | null;
-  form: LocalForm;
-  locais: Local[];
-  setForm: (form: LocalForm) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  onCancel: () => void;
-  onEdit: (local: Local) => void;
-  onDelete: (id: number) => void;
-}) {
-  if (!props.canManage) {
-    return (
-      <>
-        <EditorHeader title="Locais" editing={false} />
-        <div className="state-box">Seu perfil permite consultar locais, mas nao alterar cadastros.</div>
-        <RecordList
-          readOnly
-          empty="Nenhum local cadastrado."
-          items={props.locais.map((local) => ({
-            id: local.id,
-            title: local.nome,
-            meta: local.codigo,
-            onEdit: () => props.onEdit(local),
-            onDelete: () => props.onDelete(local.id)
-          }))}
-        />
-      </>
-    );
-  }
-
-  return (
-    <>
-      <EditorHeader title="Locais" editing={Boolean(props.editingId)} />
-      <form className="settings-form" onSubmit={props.onSubmit}>
-        <TextField label="Nome" value={props.form.nome} onChange={(nome) => props.setForm({ ...props.form, nome })} />
-        <TextField label="Código" value={props.form.codigo} onChange={(codigo) => props.setForm({ ...props.form, codigo })} />
-        <FormActions busy={props.busy} editing={Boolean(props.editingId)} onCancel={props.onCancel} />
-      </form>
-      <RecordList
-        readOnly={!props.canManage}
-        empty="Nenhum local cadastrado."
-        items={props.locais.map((local) => ({
-          id: local.id,
-          title: local.nome,
-          meta: local.codigo,
-          onEdit: () => props.onEdit(local),
-          onDelete: () => props.onDelete(local.id)
-        }))}
-      />
-    </>
-  );
-}
-
-function AntenaEditor(props: {
-  antenas: Antena[];
-  busy: boolean;
-  canManage: boolean;
-  editingId: number | null;
-  form: AntenaForm;
-  locais: Local[];
-  localNameById: Map<number, string>;
-  setForm: (form: AntenaForm) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  onCancel: () => void;
-  onEdit: (antena: Antena) => void;
-  onDelete: (id: number) => void;
-}) {
-  if (!props.canManage) {
-    return (
-      <>
-        <EditorHeader title="Leitores" editing={false} />
-        <div className="state-box">Seu perfil permite consultar leitores, mas nao alterar cadastros.</div>
-        <RecordList
-          readOnly
-          empty="Nenhum leitor cadastrado."
-          items={props.antenas.map((antena) => ({
-            id: antena.id,
-            title: antena.nome,
-            meta: `${antena.hardware_id} - ${props.localNameById.get(antena.local_id) || antena.local_nome} - ${antena.modo_comando_display}`,
-            badge: antena.command_token_configurado ? `${antena.tipo_display} / token` : antena.tipo_display,
-            onEdit: () => props.onEdit(antena),
-            onDelete: () => props.onDelete(antena.id)
-          }))}
-        />
-      </>
-    );
-  }
-
-  return (
-    <>
-      <EditorHeader title="Leitores" editing={Boolean(props.editingId)} />
-      <form className="settings-form" onSubmit={props.onSubmit}>
-        <TextField label="Nome" value={props.form.nome} onChange={(nome) => props.setForm({ ...props.form, nome })} />
-        <TextField label="Hardware ID" value={props.form.hardware_id} onChange={(hardware_id) => props.setForm({ ...props.form, hardware_id })} />
-        <SelectField
-          label="Local"
-          value={props.form.local_id}
-          onChange={(local_id) => props.setForm({ ...props.form, local_id })}
-          options={props.locais.map((local) => ({ value: local.id, label: local.nome }))}
-        />
-        <SelectField
-          label="Tipo"
-          value={props.form.tipo}
-          onChange={(tipo) => props.setForm({ ...props.form, tipo })}
-          options={[
-            { value: 1, label: "Destino" },
-            { value: 2, label: "Fluxo" }
-          ]}
-        />
-        <label className="field">
-          <span>Modo de comando</span>
-          <select
-            className="select"
-            value={props.form.modo_comando}
-            onChange={(event) => props.setForm({ ...props.form, modo_comando: event.target.value as Antena["modo_comando"] })}
-          >
-            <option value="polling">Polling</option>
-            <option value="http">HTTP direto</option>
-          </select>
-        </label>
-        <TextField
-          label="URL de comando"
-          required={props.form.modo_comando === "http"}
-          value={props.form.command_url}
-          onChange={(command_url) => props.setForm({ ...props.form, command_url })}
-        />
-        <TextField
-          label="Token de comando"
-          required={false}
-          value={props.form.command_token || ""}
-          onChange={(command_token) => props.setForm({ ...props.form, command_token })}
-        />
-        <label className="field">
-          <span>DuraÃ§Ã£o padrÃ£o (s)</span>
-          <input
-            className="input"
-            min={1}
-            required
-            type="number"
-            value={props.form.duracao_padrao_segundos}
-            onChange={(event) => props.setForm({ ...props.form, duracao_padrao_segundos: Number(event.target.value) || 1 })}
-          />
-        </label>
-        <FormActions busy={props.busy || !props.form.local_id} editing={Boolean(props.editingId)} onCancel={props.onCancel} />
-      </form>
-      <RecordList
-        readOnly={!props.canManage}
-        empty="Nenhum leitor cadastrado."
-        items={props.antenas.map((antena) => ({
-          id: antena.id,
-          title: antena.nome,
-          meta: `${antena.hardware_id} · ${props.localNameById.get(antena.local_id) || antena.local_nome} · ${antena.modo_comando_display}`,
-          badge: antena.command_token_configurado ? `${antena.tipo_display} / token` : antena.tipo_display,
-          onEdit: () => props.onEdit(antena),
-          onDelete: () => props.onDelete(antena.id)
-        }))}
-      />
-    </>
-  );
-}
-
-function ItemEditor(props: {
-  busy: boolean;
-  canManage: boolean;
-  editingId: number | null;
-  form: ItemForm;
-  itens: ItemPatrimonial[];
-  locais: Local[];
-  setForm: (form: ItemForm) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  onCancel: () => void;
-  onEdit: (item: ItemPatrimonial) => void;
-  onDelete: (id: number) => void;
-}) {
-  const localOptions = props.locais.map((local) => ({ value: local.id, label: local.nome }));
-  if (!props.canManage) {
-    return (
-      <>
-        <EditorHeader title="Itens" editing={false} />
-        <div className="state-box">Seu perfil permite consultar itens, mas nao alterar cadastros.</div>
-        <RecordList
-          readOnly
-          empty="Nenhum item cadastrado."
-          items={props.itens.map((item) => ({
-            id: item.id,
-            title: item.nome,
-            meta: `${item.tag_id} - logico: ${item.local_logico_nome || "-"} - fisico: ${item.local_fisico_nome || "-"}`,
-            badge: item.ativo ? "Ativo" : "Inativo",
-            onEdit: () => props.onEdit(item),
-            onDelete: () => props.onDelete(item.id)
-          }))}
-        />
-      </>
-    );
-  }
-
-  return (
-    <>
-      <EditorHeader title="Itens" editing={Boolean(props.editingId)} />
-      <form className="settings-form" onSubmit={props.onSubmit}>
-        <TextField label="Nome" value={props.form.nome} onChange={(nome) => props.setForm({ ...props.form, nome })} />
-        <TextField label="Tag RFID" value={props.form.tag_id} onChange={(tag_id) => props.setForm({ ...props.form, tag_id })} />
-        <SelectField
-          allowEmpty
-          label="Local lógico"
-          value={props.form.local_logico_id || 0}
-          onChange={(local_logico_id) => props.setForm({ ...props.form, local_logico_id: local_logico_id || null })}
-          options={localOptions}
-        />
-        <SelectField
-          allowEmpty
-          label="Local físico"
-          value={props.form.local_fisico_id || 0}
-          onChange={(local_fisico_id) => props.setForm({ ...props.form, local_fisico_id: local_fisico_id || null })}
-          options={localOptions}
-        />
-        <label className="check-field">
-          <input
-            checked={props.form.ativo}
-            type="checkbox"
-            onChange={(event) => props.setForm({ ...props.form, ativo: event.target.checked })}
-          />
-          <span>Item ativo</span>
-        </label>
-        <FormActions busy={props.busy} editing={Boolean(props.editingId)} onCancel={props.onCancel} />
-      </form>
-      <RecordList
-        readOnly={!props.canManage}
-        empty="Nenhum item cadastrado."
-        items={props.itens.map((item) => ({
-          id: item.id,
-          title: item.nome,
-          meta: `${item.tag_id} · lógico: ${item.local_logico_nome || "-"} · físico: ${item.local_fisico_nome || "-"}`,
-          badge: item.ativo ? "Ativo" : "Inativo",
-          onEdit: () => props.onEdit(item),
-          onDelete: () => props.onDelete(item.id)
-        }))}
-      />
-    </>
-  );
-}
-
-function PasswordEditor(props: {
-  busy: boolean;
-  form: PasswordForm;
-  setForm: (form: PasswordForm) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-}) {
-  return (
-    <>
-      <EditorHeader title="Trocar senha" editing={false} />
-      <form className="settings-form" onSubmit={props.onSubmit}>
-        <TextField label="Senha atual" type="password" value={props.form.senha_atual} onChange={(senha_atual) => props.setForm({ ...props.form, senha_atual })} />
-        <TextField label="Nova senha" type="password" value={props.form.nova_senha} onChange={(nova_senha) => props.setForm({ ...props.form, nova_senha })} />
-        <div className="settings-actions">
-          <button className="button" disabled={props.busy} type="submit">
-            <Save size={17} />
-            Alterar senha
-          </button>
-        </div>
-      </form>
-    </>
-  );
-}
-
-function UsuarioEditor(props: {
-  busy: boolean;
-  editingId: number | null;
-  form: UserForm;
-  usuarios: Usuario[];
-  setForm: (form: UserForm) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  onCancel: () => void;
-  onEdit: (usuario: Usuario) => void;
-  onDelete: (id: number) => void;
-}) {
-  return (
-    <>
-      <EditorHeader title="Usuarios" editing={Boolean(props.editingId)} />
-      <form className="settings-form" onSubmit={props.onSubmit}>
-        <TextField label="Usuario" value={props.form.username} onChange={(username) => props.setForm({ ...props.form, username })} />
-        <TextField label={props.editingId ? "Nova senha (opcional)" : "Senha inicial"} required={!props.editingId} type="password" value={props.form.password} onChange={(password) => props.setForm({ ...props.form, password })} />
-        <TextField label="Nome" required={false} value={props.form.first_name} onChange={(first_name) => props.setForm({ ...props.form, first_name })} />
-        <TextField label="Sobrenome" required={false} value={props.form.last_name} onChange={(last_name) => props.setForm({ ...props.form, last_name })} />
-        <TextField label="Email" required={false} value={props.form.email} onChange={(email) => props.setForm({ ...props.form, email })} />
-        <label className="field">
-          <span>Perfil</span>
-          <select className="select" value={props.form.is_staff ? "admin" : "tecnico"} onChange={(event) => props.setForm({ ...props.form, is_staff: event.target.value === "admin" })}>
-            <option value="tecnico">Tecnico</option>
-            <option value="admin">Admin</option>
-          </select>
-        </label>
-        <label className="check-field">
-          <input checked={props.form.is_active} type="checkbox" onChange={(event) => props.setForm({ ...props.form, is_active: event.target.checked })} />
-          <span>Usuario ativo</span>
-        </label>
-        <FormActions busy={props.busy} editing={Boolean(props.editingId)} onCancel={props.onCancel} />
-      </form>
-      <RecordList
-        empty="Nenhum usuario cadastrado."
-        items={props.usuarios.map((usuario) => ({
-          id: usuario.id,
-          title: usuario.username,
-          meta: `${usuario.first_name || "-"} ${usuario.last_name || ""} - ${usuario.email || "sem email"}`,
-          badge: `${usuario.perfil}${usuario.is_active ? "" : " / inativo"}`,
-          onEdit: () => props.onEdit(usuario),
-          onDelete: () => props.onDelete(usuario.id)
-        }))}
-      />
-    </>
-  );
-}
-
-function PermissoesEditor(props: { busy: boolean; permissoes: UserPermissions; onChange: (permissoes: UserPermissions) => void }) {
-  const items: { key: keyof UserPermissions; label: string }[] = [
-    { key: "gerenciar_cadastros", label: "Gerenciar cadastros" },
-    { key: "acionar_leitores", label: "Acionar leitores" },
-    { key: "executar_auditoria", label: "Executar auditoria" },
-    { key: "resolver_inconsistencias", label: "Resolver inconsistencias" },
-    { key: "ver_logs", label: "Ver log operacional" }
-  ];
-  return (
-    <>
-      <EditorHeader title="Permissoes do Tecnico" editing={false} />
-      <div className="record-list">
-        {items.map((item) => (
-          <label className="record-row" key={item.key}>
-            <div>
-              <strong>{item.label}</strong>
-              <span>{props.permissoes[item.key] ? "Liberado" : "Bloqueado"}</span>
-            </div>
-            <input
-              checked={Boolean(props.permissoes[item.key])}
-              disabled={props.busy}
-              type="checkbox"
-              onChange={(event) => props.onChange({ ...props.permissoes, [item.key]: event.target.checked })}
-            />
-          </label>
-        ))}
-      </div>
-    </>
-  );
-}
-
-function EditorHeader({ title, editing }: { title: string; editing: boolean }) {
-  return (
-    <div className="settings-detail-head">
-      <h2>
-        <Settings size={21} /> {title}
-      </h2>
-      <span className="badge">{editing ? "Editando" : "Novo cadastro"}</span>
-    </div>
-  );
-}
-
-function TextField({
-  label,
-  required = true,
-  type = "text",
-  value,
-  onChange
-}: {
-  label: string;
-  required?: boolean;
-  type?: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="field">
-      <span>{label}</span>
-      <input className="input" required={required} type={type} value={value} onChange={(event) => onChange(event.target.value)} />
-    </label>
-  );
-}
-
-function SelectField({
-  allowEmpty = false,
-  label,
-  value,
-  options,
-  onChange
-}: {
-  allowEmpty?: boolean;
-  label: string;
-  value: number;
-  options: { value: number; label: string }[];
-  onChange: (value: number) => void;
-}) {
-  return (
-    <label className="field">
-      <span>{label}</span>
-      <select className="select" required={!allowEmpty} value={value} onChange={(event) => onChange(Number(event.target.value))}>
-        {allowEmpty ? <option value={0}>Sem local</option> : <option value={0} disabled>Selecione</option>}
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-function FormActions({ busy, editing, onCancel }: { busy: boolean; editing: boolean; onCancel: () => void }) {
-  return (
-    <div className="settings-actions">
-      <button className="button" disabled={busy} type="submit">
-        {editing ? <Save size={17} /> : <Plus size={17} />}
-        {editing ? "Salvar" : "Adicionar"}
-      </button>
-      {editing ? (
-        <button className="button ghost" type="button" onClick={onCancel}>
-          <X size={17} />
-          Cancelar
-        </button>
-      ) : null}
-    </div>
-  );
-}
-
-function RecordList({
-  empty,
-  items,
-  readOnly = false
-}: {
-  empty: string;
-  readOnly?: boolean;
-  items: { id: number; title: string; meta: string; badge?: string; onEdit: () => void; onDelete: () => void }[];
-}) {
-  if (items.length === 0) {
-    return <div className="state-box">{empty}</div>;
-  }
-
-  return (
-    <div className="record-list">
-      {items.map((item) => (
-        <div className="record-row" key={item.id}>
-          <div>
-            <strong>{item.title}</strong>
-            <span>{item.meta}</span>
-          </div>
-          {item.badge ? <span className="badge">{item.badge}</span> : null}
-          {!readOnly ? (
-            <div className="record-actions">
-              <button className="icon-action" type="button" onClick={item.onEdit} title="Editar">
-                <Pencil size={16} />
-              </button>
-              <button className="icon-action" type="button" onClick={item.onDelete} title="Excluir">
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ) : null}
-        </div>
-      ))}
-    </div>
   );
 }
 
