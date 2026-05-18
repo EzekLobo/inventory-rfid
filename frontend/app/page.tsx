@@ -109,7 +109,7 @@ export default function HomePage() {
                     <Antenna size={20} /> Leitores
                   </h3>
                   <div className="table-wrap">
-                    <table className="data-table">
+                    <table className="data-table dashboard-table">
                       <colgroup>
                         <col style={{ width: "34%" }} />
                         <col style={{ width: "46%" }} />
@@ -127,7 +127,7 @@ export default function HomePage() {
                           <tr key={antena.id}>
                             <td>{antena.nome}</td>
                             <td>{antena.local_nome}</td>
-                            <td>
+                            <td className="status-cell">
                               <span className={antena.online ? "badge green" : "badge red"}>
                                 {antena.online ? "Online" : "Offline"}
                               </span>
@@ -149,7 +149,7 @@ export default function HomePage() {
                     <AlertTriangle size={20} /> Inconsistências recentes
                   </h3>
                   <div className="table-wrap">
-                    <table className="data-table">
+                    <table className="data-table dashboard-table">
                       <colgroup>
                         <col style={{ width: "32%" }} />
                         <col style={{ width: "40%" }} />
@@ -167,9 +167,9 @@ export default function HomePage() {
                           const tag = fullRfidTag(item.tag_id || item.item_id);
                           return (
                             <tr key={item.id}>
-                              <td>{labelInconsistenciaTipo(item.tipo)}</td>
+                              <td className="type-cell">{labelInconsistenciaTipo(item.tipo)}</td>
                               <td className="rfid-tag-cell" title={tag}>{compactRfidTag(tag)}</td>
-                              <td>{new Date(item.criado_em).toLocaleString("pt-BR")}</td>
+                              <td className="date-cell">{new Date(item.criado_em).toLocaleString("pt-BR")}</td>
                             </tr>
                           );
                         })}
@@ -189,7 +189,7 @@ export default function HomePage() {
                   <Activity size={20} /> Atividade recente
                 </h3>
                 <div className="table-wrap">
-                  <table className="data-table">
+                  <table className="data-table dashboard-table">
                     <colgroup>
                       <col style={{ width: "18%" }} />
                       <col style={{ width: "58%" }} />
@@ -205,11 +205,11 @@ export default function HomePage() {
                     <tbody>
                       {timeline.slice(0, 8).map((evento) => (
                         <tr key={evento.id}>
-                          <td>
+                          <td className="type-cell">
                             <span className="badge">{labelTimelineTipo(evento.tipo)}</span>
                           </td>
                           <td>{evento.mensagem}</td>
-                          <td>{new Date(evento.criado_em).toLocaleString("pt-BR")}</td>
+                          <td className="date-cell">{new Date(evento.criado_em).toLocaleString("pt-BR")}</td>
                         </tr>
                       ))}
                       {timeline.length === 0 ? (

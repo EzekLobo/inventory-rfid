@@ -517,7 +517,7 @@ export default function AuditoriaPage() {
                     className="audit-row"
                     onClick={() => setExpandedAuditId((current) => (current === audit.id ? null : audit.id))}
                   >
-                    <td>
+                    <td className="date-cell">
                       <span className="audit-row-title">
                         {expandedAuditId === audit.id ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
                         {new Date(audit.data).toLocaleString("pt-BR")}
@@ -525,17 +525,17 @@ export default function AuditoriaPage() {
                     </td>
                     <td>{audit.local}</td>
                     <td>{audit.leitor}</td>
-                    <td>
+                    <td className="status-cell">
                       <span className={audit.status === "Processada" ? "badge green" : audit.status === "Encerrada sem leitura" ? "badge red" : "badge"}>
                         {audit.status}
                       </span>
                     </td>
-                    <td>{countLabel(audit.esperados)}</td>
-                    <td>{countLabel(audit.encontrados, audit.status === "Aguardando leitura" ? "Aguardando" : "-")}</td>
-                    <td>{countLabel(audit.naoEncontrados, audit.status === "Aguardando leitura" ? "Aguardando" : "-")}</td>
-                    <td>{countLabel(audit.divergentes, audit.status === "Aguardando leitura" ? "Aguardando" : "-")}</td>
-                    <td>{countLabel(audit.desconhecidas, audit.status === "Aguardando leitura" ? "Aguardando" : "-")}</td>
-                    <td>{countLabel(audit.total, audit.status === "Aguardando leitura" ? "Aguardando" : "-")}</td>
+                    <td className="numeric-cell">{countLabel(audit.esperados)}</td>
+                    <td className="numeric-cell">{countLabel(audit.encontrados, audit.status === "Aguardando leitura" ? "Aguardando" : "-")}</td>
+                    <td className="numeric-cell">{countLabel(audit.naoEncontrados, audit.status === "Aguardando leitura" ? "Aguardando" : "-")}</td>
+                    <td className="numeric-cell">{countLabel(audit.divergentes, audit.status === "Aguardando leitura" ? "Aguardando" : "-")}</td>
+                    <td className="numeric-cell">{countLabel(audit.desconhecidas, audit.status === "Aguardando leitura" ? "Aguardando" : "-")}</td>
+                    <td className="numeric-cell">{countLabel(audit.total, audit.status === "Aguardando leitura" ? "Aguardando" : "-")}</td>
                   </tr>
                   {expandedAuditId === audit.id ? (
                     <tr className="audit-detail-row">

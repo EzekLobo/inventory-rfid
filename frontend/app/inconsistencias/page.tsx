@@ -287,7 +287,7 @@ export default function InconsistenciasPage() {
                       {expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                       <strong>{group.title}</strong>
                     </span>
-                    <span className="group-date">{new Date(group.createdAt).toLocaleString("pt-BR")}</span>
+                    <span className="group-date date-cell">{new Date(group.createdAt).toLocaleString("pt-BR")}</span>
                     <span className="group-summary">
                       {countDivergentes > 0 && canResolve ? (
                         <button

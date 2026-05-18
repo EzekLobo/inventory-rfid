@@ -290,7 +290,7 @@ export default function LogPage() {
                   <th>Data</th>
                   <th>Tipo</th>
                   <th>Resumo</th>
-                  <th>Usuario</th>
+                  <th>Usuário</th>
                 </tr>
               </thead>
               <tbody>
@@ -316,15 +316,15 @@ export default function LogPage() {
                             {expanded ? <ChevronDown size={17} /> : <ChevronRight size={17} />}
                           </button>
                         </td>
-                        <td>{new Date(evento.criado_em).toLocaleString("pt-BR")}</td>
-                        <td>
+                        <td className="date-cell">{new Date(evento.criado_em).toLocaleString("pt-BR")}</td>
+                        <td className="type-cell">
                           <span className={`badge log-context-badge ${context}`}>{displayType(evento)}</span>
                         </td>
                         <td>
                           <strong>{eventSummary(evento)}</strong>
                           {eventSubtext(evento) ? <span className="log-subtext">{eventSubtext(evento)}</span> : null}
                         </td>
-                        <td>{evento.usuario_nome || evento.usuario_id || "-"}</td>
+                        <td className="type-cell">{evento.usuario_nome || evento.usuario_id || "-"}</td>
                       </tr>
                       {expanded ? (
                         <tr className="log-row-expanded" key={`${evento.id}-details`}>

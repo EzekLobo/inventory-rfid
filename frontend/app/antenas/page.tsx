@@ -176,14 +176,14 @@ export default function AntenasPage() {
                       <small>{antena.hardware_id}</small>
                     </td>
                     <td>{antena.local_nome}</td>
-                    <td>{antena.tipo_display}</td>
-                    <td>
+                    <td className="type-cell">{antena.tipo_display}</td>
+                    <td className="status-cell">
                       <span className={antena.online ? "badge green" : "badge red"}>
                         {antena.online ? "Online" : "Offline"}
                       </span>{" "}
                       {antena.ativa ? <span className="badge">Ativa</span> : null}
                     </td>
-                    <td>{antena.ultimo_ping ? new Date(antena.ultimo_ping).toLocaleString("pt-BR") : "-"}</td>
+                    <td className="date-cell">{antena.ultimo_ping ? new Date(antena.ultimo_ping).toLocaleString("pt-BR") : "-"}</td>
                     <td className="actions-cell">
                       <div className="action-buttons">
                         {!canAudit ? <span className="muted-text">Sem permissões</span> : null}

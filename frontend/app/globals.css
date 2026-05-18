@@ -816,8 +816,8 @@ textarea {
 
 .data-table {
   border-collapse: collapse;
-  min-width: 0;
-  table-layout: fixed;
+  min-width: 620px;
+  table-layout: auto;
   width: 100%;
 }
 
@@ -826,7 +826,7 @@ textarea {
   border-bottom: 1px solid var(--line);
   padding: 11px 10px;
   text-align: left;
-  vertical-align: top;
+  vertical-align: middle;
   white-space: normal;
   word-break: normal;
   overflow-wrap: anywhere;
@@ -846,6 +846,58 @@ textarea {
 
 .data-table tr:hover td {
   background: rgba(87, 244, 208, 0.045);
+}
+
+.dashboard-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.dashboard-table .date-cell,
+.dashboard-table .type-cell,
+.dashboard-table .status-cell {
+  min-width: 0;
+}
+
+.dashboard-table .rfid-tag-cell {
+  min-width: 0;
+}
+
+.date-cell,
+.type-cell,
+.status-cell,
+.numeric-cell,
+.actions-cell {
+  overflow-wrap: normal;
+  vertical-align: middle;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.date-cell {
+  font-variant-numeric: tabular-nums;
+  min-width: 172px;
+}
+
+.type-cell {
+  min-width: 170px;
+}
+
+.status-cell {
+  min-width: 112px;
+}
+
+.status-cell .badge + .badge {
+  margin-left: 6px;
+}
+
+.numeric-cell {
+  min-width: 76px;
+  text-align: center;
+}
+
+.actions-cell {
+  min-width: 150px;
 }
 
 .rfid-tag-cell {
@@ -878,6 +930,10 @@ textarea {
   vertical-align: middle;
 }
 
+.readers-table {
+  min-width: 980px;
+}
+
 .readers-table th {
   vertical-align: middle;
 }
@@ -889,7 +945,7 @@ textarea {
 }
 
 .audit-table {
-  min-width: 980px;
+  min-width: 1080px;
 }
 
 .audit-table th {
@@ -905,7 +961,7 @@ textarea {
 }
 
 .audit-table th:nth-child(1) {
-  width: 18%;
+  width: 180px;
 }
 
 .audit-table th:nth-child(2) {
@@ -913,15 +969,15 @@ textarea {
 }
 
 .audit-table th:nth-child(3) {
-  width: 13%;
+  width: 14%;
 }
 
 .audit-table th:nth-child(4) {
-  width: 13%;
+  width: 170px;
 }
 
 .audit-table th:nth-child(n + 5) {
-  width: 7%;
+  width: 82px;
 }
 
 .audit-row {
@@ -1323,6 +1379,10 @@ textarea {
   vertical-align: middle;
 }
 
+.log-table {
+  min-width: 1050px;
+}
+
 .log-table th:first-child,
 .log-table td:first-child {
   padding-right: 0;
@@ -1331,12 +1391,12 @@ textarea {
 
 .log-table th:nth-child(2),
 .log-table td:nth-child(2) {
-  width: 180px;
+  width: 182px;
 }
 
 .log-table th:nth-child(3),
 .log-table td:nth-child(3) {
-  width: 150px;
+  width: 240px;
 }
 
 .log-table th:nth-child(5),
@@ -1358,9 +1418,7 @@ textarea {
 }
 
 .log-context-badge {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: none;
   white-space: nowrap;
 }
 
@@ -1610,7 +1668,7 @@ textarea {
   cursor: pointer;
   display: grid;
   gap: 14px;
-  grid-template-columns: minmax(0, 1fr) minmax(190px, auto) auto;
+  grid-template-columns: minmax(0, 1fr) max-content max-content;
   min-height: 56px;
   padding: 10px 12px;
   text-align: left;
@@ -1626,9 +1684,12 @@ textarea {
 .group-summary {
   align-items: center;
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
   min-width: 0;
+}
+
+.group-title {
+  flex-wrap: wrap;
 }
 
 .group-title strong {
@@ -1650,8 +1711,13 @@ textarea {
 }
 
 .group-summary {
+  flex-wrap: nowrap;
   justify-content: flex-end;
   justify-self: end;
+}
+
+.group-header > .group-summary:nth-child(2) {
+  grid-column: 2 / -1;
 }
 
 .group-summary .button,
@@ -1757,7 +1823,7 @@ button.compact-main {
 .compact-badges {
   align-items: center;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
   justify-content: flex-end;
 }
@@ -1871,7 +1937,7 @@ button.compact-main {
 }
 
 .actions-cell {
-  min-width: 0;
+  min-width: 150px;
 }
 
 .action-buttons {
@@ -1995,17 +2061,21 @@ button.compact-main {
 }
 
 .badge {
+  align-items: center;
   background: rgba(106, 168, 255, 0.13);
   border: 1px solid rgba(106, 168, 255, 0.22);
   color: #b8d4ff;
   display: inline-flex;
-  align-items: center;
+  flex-shrink: 0;
   gap: 5px;
   font-size: 12px;
   font-weight: 700;
+  justify-content: center;
   line-height: 1;
   min-height: 26px;
   padding: 5px 8px;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .badge.green {
@@ -2209,8 +2279,17 @@ button.compact-main {
 
   .group-date,
   .group-summary {
+    flex-wrap: wrap;
     justify-content: flex-start;
     justify-self: stretch;
+  }
+
+  .group-header > .group-summary:nth-child(2) {
+    grid-column: auto;
+  }
+
+  .compact-badges {
+    flex-wrap: wrap;
   }
 
   .inline-resolution-panel .resolution-form {

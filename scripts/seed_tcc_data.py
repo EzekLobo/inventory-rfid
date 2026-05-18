@@ -85,7 +85,9 @@ def create_locations() -> dict[str, Local]:
 
 def create_readers(locais: dict[str, Local], now) -> dict[str, AntenaRFID]:
     proximity = (
-        AntenaRFID.objects.filter(tipo=AntenaRFID.TipoAntena.FLUXO).order_by("id").first()
+        AntenaRFID.objects.filter(hardware_id="R-COL-01").order_by("id").first()
+        or AntenaRFID.objects.filter(nome__icontains="Proximidade").order_by("id").first()
+        or AntenaRFID.objects.filter(tipo=AntenaRFID.TipoAntena.FLUXO).order_by("id").first()
         or AntenaRFID.objects.filter(hardware_id__icontains="PROX").order_by("id").first()
     )
     proximity_defaults = {
