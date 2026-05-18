@@ -41,4 +41,26 @@ No contexto brasileiro, \citeonline{brito2019} analisam a viabilidade de etiquet
 
 Quanto à implantação de sistemas RFID, \citeonline{ting2013} propõem um framework de implementação e destacam que a adoção da tecnologia exige planejamento, análise de custos, riscos e limitações técnicas. \citeonline{knapp2022}, por sua vez, sistematizam fontes de interferência que podem comprometer o desempenho de instalações RFID. Essas contribuições reforçam a necessidade de tratar a validação física de alcance e taxa de leitura como uma etapa distinta da validação funcional do software.
 
+Para sintetizar o posicionamento deste trabalho em relação à literatura consultada, a Tabela \ref{tab:trabalhos-relacionados} apresenta uma comparação entre os principais estudos utilizados como referência e a contribuição desenvolvida neste TCC.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.14}
+\caption{Síntese comparativa dos trabalhos relacionados}
+\label{tab:trabalhos-relacionados}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Referência} & \textbf{Foco} & \textbf{Contribuição observada} & \textbf{Relação com este trabalho} \\
+\midrule
+\citeonline{alwadi2017} & Inventário com RFID & Discute soluções RFID para gestão de inventário e integração com sistemas. & Fundamenta a adoção de RFID como mecanismo de apoio ao inventário. \\
+\citeonline{abijaude2017} & IoT e inventário automatizado & Apresenta uma plataforma de inventário associada ao conceito de Internet das Coisas. & Aproxima a proposta da integração entre dispositivos físicos e aplicação web. \\
+\citeonline{brito2019} & Controle patrimonial público & Analisa o uso de etiquetas inteligentes na administração pública. & Reforça a relevância institucional do controle patrimonial com identificação automatizada. \\
+\citeonline{budiyanto2024} e \citeonline{mashayekhy2022} & Revisões sobre RFID, IoT e inventário & Apontam benefícios, barreiras e impactos da tecnologia em processos de inventário. & Apoiam a discussão sobre ganhos potenciais e limitações técnicas. \\
+\citeonline{ting2013} e \citeonline{knapp2022} & Implantação e interferência RFID & Destacam riscos, planejamento e fatores físicos que afetam leituras RFID. & Justificam a delimitação da validação como funcional, sem generalizar desempenho físico. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
 Este TCC diferencia-se por implementar um protótipo web completo para gestão patrimonial com cadastro de leitores, locais, itens, eventos RFID, auditoria, inconsistências e histórico operacional. A validação com leitor de proximidade de baixo custo não esgota a análise física da tecnologia RFID, mas demonstra a viabilidade do fluxo computacional necessário para que a solução seja posteriormente integrada a dispositivos de maior alcance ou sensores de acionamento.
