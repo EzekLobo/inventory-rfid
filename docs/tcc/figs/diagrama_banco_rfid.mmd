@@ -1,0 +1,128 @@
+---
+config:
+  layout: dagre
+---
+erDiagram
+    AUTH_USER {
+        int id PK
+        string username
+        string email
+        boolean is_staff
+        boolean is_active
+    }
+
+    CORE_LOCAL {
+        int id PK
+        string nome
+        string codigo UK
+    }
+
+    CORE_ANTENARFID {
+        int id PK
+        string nome
+        string hardware_id UK
+        int local_id FK
+        int tipo
+        string modo_comando
+        string command_url
+        string command_token
+        int duracao_padrao_segundos
+        boolean ativa
+        datetime ultimo_acionamento
+        datetime ativacao_expira_em
+        datetime ultimo_ping
+        boolean online
+    }
+
+    CORE_ITEMPATRIMONIAL {
+        int id PK
+        string tag_id UK
+        string nome
+        int local_logico_id FK
+        int local_fisico_id FK
+        int responsavel_id FK
+        boolean ativo
+        datetime atualizado_em
+    }
+
+    CORE_LEITURARFID {
+        int id PK
+        int item_id FK
+        string tag_id
+        int local_id FK
+        int antena_id FK
+        string classificacao
+        json payload
+        datetime criado_em
+    }
+
+    CORE_TIMELINEEVENTO {
+        int id PK
+        int item_id FK
+        int usuario_id FK
+        string tipo
+        text mensagem
+        json metadados
+        datetime criado_em
+    }
+
+    CORE_NOTIFICACAOINCONSISTENCIA {
+        int id PK
+        int item_id FK
+        string tipo
+        string tag_id
+        int local_logico_id FK
+        int local_fisico_id FK
+        boolean resolvida
+        datetime resolvida_em
+        json metadados
+        datetime criado_em
+    }
+
+    CORE_AUDITORIAJOB {
+        int id PK
+        int solicitado_por_id FK
+        int duracao_segundos
+        string status
+        datetime iniciado_em
+        datetime finaliza_em
+        datetime concluido_em
+    }
+
+    CORE_AUDITORIALEITORSTATUS {
+        int id PK
+        int job_id FK
+        int antena_id FK
+        string status
+        datetime atualizado_em
+    }
+
+    CORE_TECNICOPERMISSOES {
+        int id PK
+        boolean gerenciar_cadastros
+        boolean acionar_leitores
+        boolean executar_auditoria
+        boolean resolver_inconsistencias
+        boolean ver_logs
+        datetime atualizado_em
+    }
+
+    CORE_LOCAL ||--o{ CORE_ANTENARFID : possui
+    CORE_LOCAL ||--o{ CORE_ITEMPATRIMONIAL : local_logico
+    CORE_LOCAL ||--o{ CORE_ITEMPATRIMONIAL : local_fisico
+    AUTH_USER ||--o{ CORE_ITEMPATRIMONIAL : responsavel
+
+    CORE_ITEMPATRIMONIAL ||--o{ CORE_LEITURARFID : identifica
+    CORE_LOCAL ||--o{ CORE_LEITURARFID : ocorre_em
+    CORE_ANTENARFID ||--o{ CORE_LEITURARFID : captura
+
+    CORE_ITEMPATRIMONIAL ||--o{ CORE_TIMELINEEVENTO : historico
+    AUTH_USER ||--o{ CORE_TIMELINEEVENTO : usuario
+
+    CORE_ITEMPATRIMONIAL ||--o{ CORE_NOTIFICACAOINCONSISTENCIA : gera
+    CORE_LOCAL ||--o{ CORE_NOTIFICACAOINCONSISTENCIA : local_logico
+    CORE_LOCAL ||--o{ CORE_NOTIFICACAOINCONSISTENCIA : local_fisico
+
+    AUTH_USER ||--o{ CORE_AUDITORIAJOB : solicita
+    CORE_AUDITORIAJOB ||--o{ CORE_AUDITORIALEITORSTATUS : controla
+    CORE_ANTENARFID ||--o{ CORE_AUDITORIALEITORSTATUS : participa

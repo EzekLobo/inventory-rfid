@@ -74,6 +74,10 @@ A Figura \ref{fig:casos-uso-rfid} apresenta os principais casos de uso funcionai
 
 \input{figs/casos_uso_rfid.tex}
 
+A Figura \ref{fig:diagrama-banco-rfid} apresenta o diagrama entidade-relacionamento das principais tabelas persistidas pelo backend. O diagrama destaca as entidades centrais do invent\'ario RFID, como locais, leitores, itens patrimoniais, leituras, eventos de hist\'orico, auditorias e inconsist\^encias, bem como suas chaves e rela\c{c}\~oes principais.
+
+\input{figs/diagrama_banco_rfid.tex}
+
 A Figura \ref{fig:fluxo-atividade-rfid} complementa a modelagem ao apresentar o fluxograma geral de processamento de eventos RFID. O fluxograma evidencia a existência de dois caminhos de acionamento: o caminho validado fisicamente com leitor USB de proximidade e o caminho escalável, verificado por software, no qual um sensor ou gateway envia evento de presença para abertura da janela de leitura.
 
 \input{figs/fluxo_atividade_rfid.tex}
@@ -90,7 +94,7 @@ No cenário escalável previsto, sensores de presença, como sensores infraverme
 
 O desenvolvimento foi conduzido a partir da definição das entidades e fluxos principais do domínio. Inicialmente, foram modelados locais, leitores RFID e itens patrimoniais. Cada item possui uma identificação de etiqueta, um local lógico esperado e um local físico detectado. Essa distinção permite comparar o registro do sistema com a situação observada nas leituras.
 
-Em seguida, foram implementados os endpoints da API e as telas do frontend. O sistema permite cadastrar e consultar itens, acionar leitores, registrar eventos RFID, consultar logs, executar auditorias e listar inconsistências. Também foi implementado um mecanismo para abertura de janelas de leitura, de modo que uma tag recebida seja processada somente quando associada a um leitor ativo ou a uma operação de auditoria.
+Em seguida, foram implementadas as funcionalidades de uso do sistema. A aplicação permite cadastrar e consultar itens, acionar leitores, registrar eventos RFID, consultar o histórico operacional, executar auditorias e listar inconsistências. Também foi implementado um mecanismo para abertura de janelas de leitura, de modo que uma tag recebida seja considerada apenas quando estiver associada a um leitor ativo ou a uma operação de auditoria.
 
 O processamento das leituras contempla normalização de tags, deduplicação de eventos em intervalo curto, verificação de tags desconhecidas, atualização de localização física e geração de registros históricos. Em leitores configurados como destino, a leitura pode atualizar o local físico do item. Em leitores configurados como fluxo, a leitura pode registrar passagem sem necessariamente alterar o local físico. Essa separação favorece a expansão futura da solução para diferentes pontos de captura.
 
