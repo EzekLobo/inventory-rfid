@@ -43,7 +43,52 @@ O log operacional mantém o histórico dos eventos relevantes do sistema. Esse h
 
 \section{Interface do sistema}
 
-A interface web foi organizada para apoiar o fluxo de uso do sistema. O painel inicial apresenta uma visão geral do inventário e das atividades recentes. A área de configurações permite cadastrar locais, leitores e itens patrimoniais. A tela de leitores permite acionar janelas de sincronização e auditoria. A tela de patrimônio apresenta os itens cadastrados e suas localizações. A tela de inconsistências permite consultar divergências detectadas, enquanto o log operacional centraliza o histórico de eventos.
+A interface web foi organizada para apoiar o uso prático do protótipo, reunindo as funções principais de consulta, conferência e acompanhamento do inventário. O objetivo não foi apenas disponibilizar cadastros, mas apresentar as informações de forma compreensível para quem precisa verificar a situação dos bens e acompanhar possíveis divergências. Para isso, as telas foram estruturadas com resumos, listas por local, indicadores de inconsistência e histórico de ações.
+
+O painel inicial apresenta uma visão geral do inventário e das atividades recentes. Nele, o usuário consegue observar a quantidade de leitores, itens ativos e inconsistências abertas, além de consultar rapidamente leituras e eventos recentes. Essa tela funciona como ponto de entrada para a rotina de acompanhamento do sistema, conforme ilustrado na Figura \ref{fig:sistema-dashboard}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figs/sistema/sistema-dashboard.png}
+\caption{Painel inicial do sistema de inventário RFID}
+\label{fig:sistema-dashboard}
+\end{figure}
+
+A tela de patrimônio organiza os itens por local, permitindo visualizar quais bens estão associados a espaços como Colegiado, Laboratório 4A e Sala 1245. Essa organização favorece a conferência patrimonial, pois aproxima a consulta do modo como os bens são verificados no ambiente físico. A Figura \ref{fig:sistema-itens} apresenta essa forma de organização.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figs/sistema/sistema-itens.png}
+\caption{Tela de consulta dos itens patrimoniais por local}
+\label{fig:sistema-itens}
+\end{figure}
+
+A auditoria patrimonial é a funcionalidade responsável por comparar o que se espera encontrar em determinado local com o que foi registrado durante a leitura RFID. A tela correspondente permite iniciar a conferência e também simular leituras para fins de teste funcional, sem alterar o propósito principal da solução. A Figura \ref{fig:sistema-auditoria} mostra a interface utilizada para essa etapa.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figs/sistema/sistema-auditoria.png}
+\caption{Tela de auditoria patrimonial com RFID}
+\label{fig:sistema-auditoria}
+\end{figure}
+
+Quando a conferência identifica diferença entre o inventário esperado e o resultado observado, o sistema registra inconsistências. Essas ocorrências auxiliam a análise posterior, indicando situações como item não encontrado, local divergente ou tag desconhecida. A Figura \ref{fig:sistema-inconsistencias} apresenta a tela destinada ao acompanhamento dessas pendências.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figs/sistema/sistema-inconsistencias.png}
+\caption{Tela de acompanhamento de inconsistências patrimoniais}
+\label{fig:sistema-inconsistencias}
+\end{figure}
+
+Por fim, o log operacional reúne o histórico das ações relevantes realizadas no sistema, incluindo leituras, auditorias, movimentações e resoluções de inconsistências. Esse registro contribui para a rastreabilidade do processo, pois permite compreender quando uma situação foi detectada e quais ações foram registradas posteriormente. A Figura \ref{fig:sistema-log} apresenta essa tela.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figs/sistema/sistema-log.png}
+\caption{Tela de histórico operacional do sistema}
+\label{fig:sistema-log}
+\end{figure}
 
 \section{Resultados da validação funcional}
 
