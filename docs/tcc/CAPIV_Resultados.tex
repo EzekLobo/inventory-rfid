@@ -99,7 +99,7 @@ Por fim, o log operacional reúne o histórico das ações relevantes realizadas
 
 A validação funcional foi realizada em ambiente controlado, utilizando um computador pessoal, um leitor RFID de proximidade de baixo custo e uma única tag RFID. Os testes verificaram o fluxo da aplicação: leitura da tag, captura pelo adaptador intermediário, envio do evento à API REST, processamento pelo backend, persistência dos dados e atualização do inventário. Essa evidência corresponde à integração física do protótipo com um dispositivo real de captura dentro do escopo experimental definido.
 
-Os resultados foram organizados em duas frentes. A primeira corresponde ao fluxo validado fisicamente, envolvendo leitor USB de proximidade, uma tag, comunicador intermediário, envio à API e atualização do sistema. A segunda corresponde à verificação funcional por software, incluindo o evento \textit{motion\_detected}, a abertura de janela de leitura, o retorno do comando \textit{start\_reading} e o processamento de eventos \textit{tags\_read}. A Tabela \ref{tab:testes-funcionais} sintetiza os principais resultados, destacando a evidência obtida e a limitação associada a cada aspecto avaliado.
+Os resultados foram organizados em duas frentes. A primeira corresponde ao fluxo validado fisicamente, envolvendo leitor USB de proximidade, uma tag, comunicador intermediário, envio à API e atualização do sistema. A segunda corresponde à verificação funcional por software, incluindo o evento \textit{motion\_detected}, a abertura de janela de leitura, o retorno do comando \textit{start\_reading} e o processamento de eventos \textit{tags\_read}. A Tabela \ref{tab:testes-funcionais} sintetiza os principais resultados, destacando a evidência obtida e o escopo de cada aspecto avaliado.
 
 \begin{table}[H]
 \centering
@@ -112,7 +112,7 @@ Os resultados foram organizados em duas frentes. A primeira corresponde ao fluxo
 \toprule
 \textbf{Aspecto avaliado} & \textbf{Evidência de validação} & \textbf{Escopo da evidência} \\
 \midrule
-Cadastros e configuração & Teste funcional: locais, leitores e itens patrimoniais foram cadastrados e ficaram disponíveis para os fluxos de leitura. & Não envolve validação física de RFID. \\
+Cadastros e configuração & Teste funcional: locais, leitores e itens patrimoniais foram cadastrados e ficaram disponíveis para os fluxos de leitura. & Verificação realizada no ambiente de software. \\
 Leitura RFID USB & Validação física controlada: a tag de proximidade foi lida pelo leitor USB, capturada pelo comunicador intermediário e enviada à API. & Uso de uma tag e leitura por aproximação direta. \\
 Processamento do inventário & Teste funcional integrado: o evento \textit{tags\_read} foi processado, com registro de histórico e atualização do item. & Métricas físicas fora do escopo experimental. \\
 Inconsistências e auditoria & Teste funcional: o sistema registrou situações como tag desconhecida, local divergente e itens ausentes em auditoria. & Evidência obtida em cenário controlado. \\
@@ -124,8 +124,6 @@ Fluxo sensor/gateway & Verificação por software: os eventos \textit{motion\_de
 \normalsize
 \renewcommand{\arraystretch}{1}
 
-Como os resultados quantitativos dependem de medições específicas do experimento, não foram assumidos valores de acurácia, alcance, taxa de leitura ou tempo de resposta sem evidência. Ainda assim, a implementação demonstra que o fluxo essencial da solução foi contemplado: o sistema cadastra entidades, recebe eventos RFID, processa leituras, atualiza o inventário, gera histórico e identifica inconsistências. Essa forma de avaliação deve ser entendida como validação funcional do protótipo no escopo definido \cite{ieee1012}.
-
-Como evidência complementar de desenvolvimento, foram considerados testes funcionais de software para comportamentos centrais do fluxo RFID, incluindo ativação de antena a partir de evento de movimento, retorno do comando \textit{start\_reading}, processamento de \textit{tags\_read}, atualização de localização física, registro de histórico, identificação de tags desconhecidas, deduplicação e cenários de auditoria. Esses testes apoiam a verificação funcional do software e reforçam a continuidade entre a arquitetura prevista e o protótipo implementado.
+Após a síntese apresentada na tabela, observa-se que o fluxo essencial da solução foi contemplado: o sistema cadastra entidades, recebe eventos RFID, processa leituras, atualiza o inventário, gera histórico e identifica inconsistências. Os testes funcionais de software complementaram a validação física ao verificar comportamentos centrais do fluxo RFID, como ativação por evento de movimento, retorno do comando \textit{start\_reading}, processamento de \textit{tags\_read}, deduplicação e cenários de auditoria. Essa forma de avaliação deve ser entendida como validação funcional do protótipo no escopo definido \cite{ieee1012}.
 
 Portanto, o resultado principal do protótipo é a comprovação funcional da arquitetura de software. A validação com computador pessoal, leitor de proximidade e uma tag demonstra que a aplicação é capaz de operar com eventos RFID reais em ambiente controlado, comprovando o fluxo computacional necessário ao inventário com RFID. A evolução para sensores de presença e antenas RFID de maior alcance permanece como continuidade natural da proposta.

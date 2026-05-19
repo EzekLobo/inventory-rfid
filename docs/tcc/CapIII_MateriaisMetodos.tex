@@ -46,6 +46,7 @@ RF09 & Identificar e registrar inconsistências, como local divergente, item nã
 RF10 & Permitir a consulta do inventário, do log operacional, das auditorias e das inconsistências registradas. \\
 \bottomrule
 \end{tabularx}
+\legend{Fonte: Elaborado pelo autor (2026).}
 \end{table}
 
 \begin{table}[H]
@@ -68,36 +69,12 @@ RNF06 & A interface deve organizar cadastros, consultas, auditorias e inconsist�
 RNF07 & A validação física do protótipo deve ser delimitada ao hardware disponível, sem generalizar métricas de alcance, acurácia ou leitura simultânea. \\
 \bottomrule
 \end{tabularx}
+\legend{Fonte: Elaborado pelo autor (2026).}
 \end{table}
 
-Para reforçar a rastreabilidade entre requisitos, funcionalidades e validação, a Tabela \ref{tab:rastreabilidade-requisitos} relaciona cada requisito funcional aos elementos observáveis do protótipo. Essa matriz também delimita o tipo de evidência utilizado, distinguindo funcionalidades verificadas pela interface, pela API e pelo fluxo RFID validado em cenário controlado.
+Os requisitos funcionais foram posteriormente verificados nas telas, endpoints e fluxos de leitura implementados, conforme discutido nos resultados. Com isso, evita-se repetir a mesma relação em uma matriz adicional, mantendo a rastreabilidade no encadeamento entre requisitos, modelagem, implementação e validação.
 
-\begin{table}[H]
-\centering
-\scriptsize
-\setlength{\tabcolsep}{3pt}
-\renewcommand{\arraystretch}{1.15}
-\caption{Matriz de rastreabilidade dos requisitos funcionais}
-\label{tab:rastreabilidade-requisitos}
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{1.15cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
-\toprule
-\textbf{Req.} & \textbf{Caso de uso ou funcionalidade} & \textbf{Tela/API relacionada} & \textbf{Evidência de validação} \\
-\midrule
-RF01 & Autenticar usuário e trocar senha. & Login e configurações de usuário. & Acesso protegido às telas administrativas e alteração de credenciais. \\
-RF02 & Gerenciar locais. & Configurações e cadastros administrativos. & Locais cadastrados e utilizados como referência de itens e leitores. \\
-RF03 & Consultar e gerenciar leitores RFID. & Tela de leitores RFID e endpoints de leitores. & Leitores associados a locais, tipo de operação e comando de leitura. \\
-RF04 & Consultar e gerenciar patrimônio. & Tela de patrimônio e endpoints de itens. & Itens associados a tags RFID, local lógico e local físico. \\
-RF05 & Executar auditoria patrimonial e acionar leitura. & Tela de auditoria e comando de leitura. & Abertura de janela de leitura e fluxo de auditoria processado pelo backend. \\
-RF06 & Enviar leitura de tags e comandos RFID. & API de eventos RFID e comunicador intermediário. & Evento \textit{tags\_read} recebido pela API no fluxo com leitor USB e em verificação funcional. \\
-RF07 & Processar leituras RFID. & Pipeline de processamento no backend. & Normalização, deduplicação, validação de tag e atualização de local físico quando aplicável. \\
-RF08 & Consultar histórico operacional. & Tela de log operacional e registros de timeline. & Leituras, auditorias, movimentações e resoluções registradas como histórico. \\
-RF09 & Consultar e resolver inconsistências. & Tela de inconsistências e regras de auditoria. & Registro de tag desconhecida, local divergente e item ausente quando há divergência. \\
-RF10 & Consultar inventário, auditorias, logs e inconsistências. & Painel inicial, patrimônio, auditorias, log e inconsistências. & Dados consolidados apresentados nas telas de consulta do sistema. \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-A Figura \ref{fig:casos-uso-rfid} apresenta os principais casos de uso funcionais do protótipo. Os requisitos não funcionais não são representados como casos de uso, pois descrevem atributos de qualidade e restrições da solução, sendo por isso apresentados em tabela própria.
+A Figura \ref{fig:casos-uso-rfid} apresenta os principais casos de uso funcionais do protótipo. Os requisitos não funcionais não são representados como casos de uso, pois descrevem atributos de qualidade e restrições da solução, sendo por isso apresentados junto ao levantamento de requisitos.
 
 \input{figs/casos_uso_rfid.tex}
 
