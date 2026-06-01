@@ -1,7 +1,75 @@
 \begin{figure}[H]
 \centering
+\usetikzlibrary{shapes.geometric,arrows.meta}
 \caption{Diagrama de casos de uso do sistema de invent\'ario RFID}
-\includegraphics[width=\textwidth,height=0.82\textheight,keepaspectratio]{figs/casos_uso_rfid.png}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    font=\scriptsize,
+    actorlabel/.style={align=center, font=\scriptsize},
+    usecase/.style={draw, ellipse, align=center, minimum width=3.15cm, minimum height=0.58cm, fill=blue!5, inner sep=1.2pt},
+    admincase/.style={draw, ellipse, align=center, minimum width=3.25cm, minimum height=0.58cm, fill=yellow!10, inner sep=1.2pt},
+    devicecase/.style={draw, ellipse, align=center, minimum width=3.45cm, minimum height=0.60cm, fill=green!6, inner sep=1.2pt},
+    system/.style={draw, fill=gray!4},
+    assoc/.style={semithick, gray!70},
+    include/.style={dashed, -{Stealth[length=2.0mm,width=1.4mm]}, semithick, gray!72},
+    generalize/.style={-{Triangle[open,length=3.0mm,width=3.0mm]}, semithick, gray!72}
+]
+
+\newcommand{\umlactor}[4]{%
+    \coordinate (#4) at (#1,#2);
+    \draw (#1,#2+0.42) circle (0.12);
+    \draw (#1,#2+0.30) -- (#1,#2-0.22);
+    \draw (#1-0.29,#2+0.10) -- (#1+0.29,#2+0.10);
+    \draw (#1,#2-0.22) -- (#1-0.24,#2-0.60);
+    \draw (#1,#2-0.22) -- (#1+0.24,#2-0.60);
+    \node[actorlabel] at (#1,#2-0.98) {#3};
+}
+
+\draw[system] (0.35,1.05) rectangle (20.80,-16.90);
+\node[font=\small\bfseries, anchor=north west] at (0.65,0.85) {Sistema Web de Invent\'ario RFID};
+
+% Atores externos, conforme UML: entidades fora da fronteira do sistema.
+\umlactor{-1.35}{-5.60}{Usu\'ario/\\T\'ecnico}{tecnico}
+\umlactor{-1.35}{-13.70}{Administrador}{admin}
+\umlactor{22.45}{-4.15}{Comunicador\\intermedi\'ario\\{\tiny (validado com leitor USB)}}{comunicador}
+\umlactor{22.45}{-12.25}{Leitor ou gateway\\em rede\\{\tiny (verificado por software)}}{gateway}
+
+% Casos de uso: resultados observaveis oferecidos pelo sistema aos atores.
+\node[usecase] (auth) at (3.25,-0.90) {Autenticar\\usu\'ario};
+\node[usecase] (painel) at (3.25,-2.05) {Consultar painel\\inicial};
+\node[usecase] (leitores) at (3.25,-3.20) {Consultar leitores\\RFID};
+\node[usecase] (auditorias) at (3.25,-4.35) {Consultar\\auditorias};
+\node[usecase] (patrimonio) at (3.25,-5.50) {Consultar\\patrim\^onio};
+\node[usecase] (log) at (3.25,-6.65) {Consultar log\\operacional};
+
+\node[usecase] (cadastros) at (8.10,-2.00) {Gerenciar locais,\\leitores e itens};
+\node[usecase] (acionar) at (8.10,-4.00) {Acionar\\leitor};
+\node[usecase] (auditoria) at (8.10,-6.00) {Executar auditoria\\patrimonial};
+\node[usecase] (inconsistencias) at (8.10,-8.00) {Consultar\\inconsist\^encias};
+\node[usecase] (resolver) at (8.10,-10.00) {Resolver\\inconsist\^encia};
+\node[admincase] (usuarios) at (8.10,-15.00) {Gerenciar usu\'arios\\e permiss\~oes};
+
+\node[devicecase] (comandoPolling) at (15.45,-3.10) {Consultar comando\\de leitura};
+\node[devicecase] (eventos) at (15.45,-7.10) {Receber eventos\\RFID};
+\node[devicecase] (comandoDireto) at (15.45,-11.10) {Enviar comando direto\\de leitura};
+
+% Relacionamentos entre atores e casos de uso.
+\foreach \uc in {auth,painel,leitores,auditorias,patrimonio,log,cadastros,acionar,auditoria,inconsistencias,resolver}
+  \draw[assoc] (tecnico) -- (0.70,-5.60) |- (\uc.west);
+
+\draw[assoc] (admin) -- (0.70,-13.70) |- (usuarios.west);
+\draw[generalize] (admin.north) -- (tecnico.south);
+
+\draw[assoc] (comunicador.west) -- (20.20,-4.15) |- (comandoPolling.east);
+\draw[assoc] (comunicador.south west) -- (20.20,-5.50) |- (eventos.east);
+\draw[assoc] (gateway.north west) -- (20.20,-10.80) |- (eventos.east);
+\draw[assoc] (gateway.west) -- (20.20,-12.25) |- (comandoDireto.east);
+
+\draw[include]
+  (auditoria.east) -- ++(1.20,0) |- node[pos=0.42, above, font=\tiny] {\textless\textless include\textgreater\textgreater} (acionar.east);
+
+\end{tikzpicture}
+}
 \legend{Fonte: Elaborado pelo autor (2026).}
 \label{fig:casos-uso-rfid}
 \end{figure}
