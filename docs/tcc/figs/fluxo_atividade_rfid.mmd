@@ -5,6 +5,8 @@ flowchart TB
     Sensor[/Sensor ou gateway<br/>detecta presença/]
     Janela[API abre janela<br/>de leitura]
     Http{Leitor possui<br/>HTTP direto?}
+    RotaPolling["Não"]:::branch
+    RotaHttp["Sim"]:::branch
 
     subgraph SemHttp["Leitor sem HTTP direto"]
         CmdPolling[API mantém comando<br/>disponível para consulta]
@@ -33,7 +35,8 @@ flowchart TB
     Usuario --> Janela
     Janela --> Http
 
-    Http -- Não --> CmdPolling
+    Http --> RotaPolling
+    RotaPolling --> SemHttp
     CmdPolling --> Consulta
     Consulta --> StartUsb
     StartUsb --> LeituraUsb
@@ -41,7 +44,8 @@ flowchart TB
     RepasseUsb --> EventoUsb
     EventoUsb --> Processa
 
-    Http -- Sim --> CmdHttp
+    Http --> RotaHttp
+    RotaHttp --> ComHttp
     CmdHttp --> LeituraHttp
     LeituraHttp --> EventoHttp
     EventoHttp --> Processa
@@ -57,6 +61,7 @@ flowchart TB
     classDef io fill:#ecf8ef,stroke:#5d9b6a,color:#111,stroke-width:1px;
     classDef decision fill:#fff4c2,stroke:#b58b00,color:#111,stroke-width:1px;
     classDef alert fill:#fdeaea,stroke:#c76b6b,color:#111,stroke-width:1px;
+    classDef branch fill:#f3e8ff,stroke:none,color:#5b3568,font-weight:bold;
 
     class Inicio,Fim terminal;
     class Usuario,Janela,CmdPolling,Consulta,LeituraUsb,CmdHttp,LeituraHttp,Processa,Compara,Consolida,Historico action;
