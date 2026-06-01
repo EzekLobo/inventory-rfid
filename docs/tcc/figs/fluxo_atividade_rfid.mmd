@@ -22,12 +22,9 @@ flowchart TB
     end
 
     Processa[API normaliza tags<br/>e valida cadastro]
-    Tag{Tag cadastrada?}
-    Desconhecida[Registra inconsistência<br/>de tag desconhecida]
-    Atualiza[Registra leitura<br/>e atualiza local físico]
-    Local{Local diverge?}
-    Divergencia[Registra inconsistência<br/>de local]
-    Resolve[Mantém ou resolve<br/>inconsistência aberta]
+    Compara[Compara tags lidas<br/>com itens previstos]
+    Consolida[Registra leituras<br/>e atualiza inventário]
+    Inconsistencias[Registra inconsistências<br/>identificadas]
     Historico[Registra histórico, log<br/>e resultado de auditoria]
     Fim([Inventário disponível<br/>para consulta])
 
@@ -49,15 +46,10 @@ flowchart TB
     LeituraHttp --> EventoHttp
     EventoHttp --> Processa
 
-    Processa --> Tag
-    Tag -- Não --> Desconhecida
-    Tag -- Sim --> Atualiza
-    Atualiza --> Local
-    Local -- Sim --> Divergencia
-    Local -- Não --> Resolve
-    Desconhecida --> Historico
-    Divergencia --> Historico
-    Resolve --> Historico
+    Processa --> Compara
+    Compara --> Consolida
+    Consolida --> Inconsistencias
+    Inconsistencias --> Historico
     Historico --> Fim
 
     classDef terminal fill:#f6f6f6,stroke:#666,color:#111,stroke-width:1px;
@@ -67,7 +59,7 @@ flowchart TB
     classDef alert fill:#fdeaea,stroke:#c76b6b,color:#111,stroke-width:1px;
 
     class Inicio,Fim terminal;
-    class Usuario,Janela,CmdPolling,Consulta,LeituraUsb,CmdHttp,LeituraHttp,Processa,Atualiza,Resolve,Historico action;
+    class Usuario,Janela,CmdPolling,Consulta,LeituraUsb,CmdHttp,LeituraHttp,Processa,Compara,Consolida,Historico action;
     class Sensor,StartUsb,RepasseUsb,EventoUsb,EventoHttp io;
-    class Http,Tag,Local decision;
-    class Desconhecida,Divergencia alert;
+    class Http decision;
+    class Inconsistencias alert;
