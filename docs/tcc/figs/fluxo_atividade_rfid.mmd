@@ -1,0 +1,73 @@
+%%{init: {"theme": "base", "flowchart": {"curve": "basis", "nodeSpacing": 36, "rankSpacing": 48}}}%%
+flowchart TB
+    Inicio([Início])
+    Usuario[Usuário aciona<br/>leitura ou auditoria]
+    Sensor[/Sensor ou gateway<br/>detecta presença/]
+    Janela[API abre janela<br/>de leitura]
+    Http{Leitor possui<br/>HTTP direto?}
+
+    subgraph SemHttp["Leitor sem HTTP direto"]
+        CmdPolling[API mantém comando<br/>disponível para consulta]
+        Consulta[Comunicador intermediário<br/>consulta a API]
+        StartUsb[/Comunicador recebe<br/><code>start_reading</code>/]
+        LeituraUsb[Leitor RFID USB<br/>lê a tag]
+        RepasseUsb[/Leitor repassa UID<br/>ao comunicador/]
+        EventoUsb[/Comunicador envia<br/><code>tags_read</code> à API/]
+    end
+
+    subgraph ComHttp["Leitor com HTTP direto"]
+        CmdHttp[API envia<br/><code>start_reading</code> ao leitor]
+        LeituraHttp[Leitor RFID de longa distância<br/>lê a tag]
+        EventoHttp[/Leitor ou gateway envia<br/><code>tags_read</code> à API/]
+    end
+
+    Processa[API normaliza tags<br/>e valida cadastro]
+    Tag{Tag cadastrada?}
+    Desconhecida[Registra inconsistência<br/>de tag desconhecida]
+    Atualiza[Registra leitura<br/>e atualiza local físico]
+    Local{Local diverge?}
+    Divergencia[Registra inconsistência<br/>de local]
+    Resolve[Mantém ou resolve<br/>inconsistência aberta]
+    Historico[Registra histórico, log<br/>e resultado de auditoria]
+    Fim([Inventário disponível<br/>para consulta])
+
+    Inicio --> Usuario
+    Sensor -.-> Janela
+    Usuario --> Janela
+    Janela --> Http
+
+    Http -- Não --> CmdPolling
+    CmdPolling --> Consulta
+    Consulta --> StartUsb
+    StartUsb --> LeituraUsb
+    LeituraUsb --> RepasseUsb
+    RepasseUsb --> EventoUsb
+    EventoUsb --> Processa
+
+    Http -- Sim --> CmdHttp
+    CmdHttp --> LeituraHttp
+    LeituraHttp --> EventoHttp
+    EventoHttp --> Processa
+
+    Processa --> Tag
+    Tag -- Não --> Desconhecida
+    Tag -- Sim --> Atualiza
+    Atualiza --> Local
+    Local -- Sim --> Divergencia
+    Local -- Não --> Resolve
+    Desconhecida --> Historico
+    Divergencia --> Historico
+    Resolve --> Historico
+    Historico --> Fim
+
+    classDef terminal fill:#f6f6f6,stroke:#666,color:#111,stroke-width:1px;
+    classDef action fill:#eaf2ff,stroke:#5b7fb3,color:#111,stroke-width:1px;
+    classDef io fill:#ecf8ef,stroke:#5d9b6a,color:#111,stroke-width:1px;
+    classDef decision fill:#fff4c2,stroke:#b58b00,color:#111,stroke-width:1px;
+    classDef alert fill:#fdeaea,stroke:#c76b6b,color:#111,stroke-width:1px;
+
+    class Inicio,Fim terminal;
+    class Usuario,Janela,CmdPolling,Consulta,LeituraUsb,CmdHttp,LeituraHttp,Processa,Atualiza,Resolve,Historico action;
+    class Sensor,StartUsb,RepasseUsb,EventoUsb,EventoHttp io;
+    class Http,Tag,Local decision;
+    class Desconhecida,Divergencia alert;
