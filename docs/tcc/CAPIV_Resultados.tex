@@ -5,9 +5,9 @@
 
 O protótipo implementado consiste em uma aplicação web para gerenciamento de inventário patrimonial com apoio de eventos RFID. A solução permite cadastrar locais, leitores RFID e itens patrimoniais, associando cada item a uma etiqueta. Além disso, disponibiliza recursos para acionar janelas de leitura, registrar eventos, atualizar a localização física de ativos, identificar inconsistências e consultar o histórico operacional.
 
-A implementação foi organizada de forma modular. O frontend concentra as telas de interação com o usuário, incluindo painel inicial, configurações, patrimônio, leitores RFID, auditoria, inconsistências e log operacional. O backend disponibiliza uma API REST para comunicação com a interface e com dispositivos de leitura, processando as regras de inventário e persistindo os dados necessários. Na validação com o leitor de proximidade, utilizou-se um adaptador intermediário de integração capaz de capturar a tag lida pelo dispositivo e encaminhar o evento ao sistema.
+A implementação foi organizada de forma modular. O frontend concentra as telas de interação com o usuário, incluindo painel inicial, configurações, patrimônio, leitores RFID, auditoria, inconsistências e log operacional. O backend disponibiliza uma API REST para comunicação com a interface e com dispositivos de leitura, processando as regras de inventário e persistindo os dados necessários. Essa separação demonstra que o protótipo não depende de uma única interface de captura, pois o leitor utilizado na validação atua como uma das possíveis fontes de eventos para o sistema.
 
-Esse adaptador foi necessário porque o leitor empregado opera como dispositivo de entrada local e não possui comunicação HTTP nativa. Assim, sua utilização decorre de uma limitação de interface do equipamento disponível para o experimento, e não de uma restrição da API proposta. A mesma camada também favorece a compatibilidade com periféricos simples, enquanto dispositivos com rede podem enviar eventos diretamente à API, desde que respeitem o formato esperado. Portanto, embora a validação tenha sido realizada com leitor RFID de proximidade, a arquitetura não fica restrita a esse equipamento.
+Na validação com o leitor de proximidade, utilizou-se um adaptador intermediário de integração capaz de capturar a tag lida pelo dispositivo e encaminhar o evento ao sistema. Esse adaptador foi necessário porque o leitor empregado opera como dispositivo de entrada local e não possui comunicação HTTP nativa. Assim, sua utilização decorre de uma limitação de interface do equipamento disponível para o experimento, e não de uma restrição da API proposta. A mesma camada também favorece a compatibilidade com periféricos simples, enquanto dispositivos com rede podem enviar eventos diretamente à API, desde que respeitem o formato esperado.
 
 A Figura \ref{fig:arquitetura-geral-rfid} apresenta uma visão geral da arquitetura proposta. O sistema web permite que usuários gerenciem itens, locais, leitores e auditorias. A API recebe eventos RFID, aciona o processamento das regras de inventário e registra os dados necessários ao acompanhamento patrimonial. Na validação deste trabalho, utilizou-se um leitor RFID USB de curto alcance conectado a um computador intermediário, preservando-se o fluxo previsto para sensores e leitores com comunicação em rede.
 
@@ -15,7 +15,7 @@ A Figura \ref{fig:arquitetura-geral-rfid} apresenta uma visão geral da arquitet
 
 \section{Cadastro de locais, leitores e itens}
 
-O cadastro de locais representa os espaços nos quais os bens podem estar logicamente alocados ou fisicamente detectados. Cada local possui identificação própria e é utilizado como referência para leitores RFID e itens patrimoniais. Essa modelagem permite comparar a localização esperada de um item com a localização detectada em uma leitura.
+O cadastro de locais representa os espaços nos quais os bens podem estar logicamente alocados ou fisicamente detectados. Cada local possui identificação própria e é utilizado como referência para leitores RFID e itens patrimoniais. Essa modelagem é relevante para a avaliação da proposta porque permite comparar a localização esperada de um item com a localização detectada em uma leitura.
 
 Os leitores RFID são cadastrados com identificador de hardware, local associado e tipo de operação. A distinção entre leitores do tipo destino e leitores do tipo fluxo permite representar comportamentos distintos. Um leitor de destino pode atualizar a localização física de um item, enquanto um leitor de fluxo pode apenas registrar a passagem de uma tag por determinado ponto. Essa decisão de modelagem é relevante para uma arquitetura escalável, pois possibilita que diferentes pontos de captura tenham funções distintas no processo de inventário.
 
@@ -35,32 +35,32 @@ Esse fluxo evidencia a separação entre hardware e regra de negócio. O leitor 
 
 \section{Auditoria, inconsistências e log operacional}
 
-A funcionalidade de auditoria permite comparar os itens esperados em um local com as tags efetivamente detectadas durante uma janela de leitura. A partir dessa comparação, o sistema pode classificar situações como item encontrado, item ausente, item em local divergente ou tag desconhecida. Essa classificação auxilia o processo de conferência patrimonial, pois transforma leituras isoladas em informações operacionais.
+A funcionalidade de auditoria permite comparar os itens esperados em um local com as tags efetivamente detectadas durante uma janela de leitura. A partir dessa comparação, o sistema pode classificar situações como item encontrado, item ausente, item em local divergente ou tag desconhecida. Essa classificação demonstra a contribuição do protótipo para a conferência patrimonial, pois transforma leituras isoladas em informações operacionais.
 
 As inconsistências geradas pelo sistema registram divergências entre o inventário lógico e o inventário físico. Um item pode estar logicamente associado a determinado local, mas ser detectado em outro. Também pode ocorrer de uma tag ser lida sem estar cadastrada, indicando necessidade de investigação. O registro dessas inconsistências permite que o usuário acompanhe pendências e resolva divergências de forma organizada.
 
-O log operacional mantém o histórico dos eventos relevantes do sistema. Esse histórico inclui movimentações, leituras, auditorias e alterações de estado. Em um contexto de controle patrimonial, esse recurso é importante porque permite rastrear ações e compreender como o estado de um item foi modificado ao longo do tempo.
+O log operacional mantém o histórico dos eventos relevantes do sistema, incluindo movimentações, leituras, auditorias e alterações de estado. Em um contexto de controle patrimonial, esse recurso reforça a rastreabilidade da solução, pois permite compreender quando uma situação foi detectada e como o estado de um item foi modificado ao longo do tempo.
 
 \section{Interface do sistema}
 
-A interface web foi organizada para apoiar o uso prático do protótipo, reunindo as funções principais de consulta, conferência e acompanhamento do inventário. O objetivo não foi apenas disponibilizar cadastros, mas apresentar as informações de forma compreensível para quem precisa verificar a situação dos bens e acompanhar possíveis divergências. Para isso, as telas foram estruturadas com resumos, listas por local, indicadores de inconsistência e histórico de ações.
+A interface web foi organizada para apoiar o uso prático do protótipo, reunindo as funções principais de consulta, conferência e acompanhamento do inventário. O objetivo não foi apenas disponibilizar cadastros, mas apresentar as informações de forma compreensível para quem precisa verificar a situação dos bens e acompanhar possíveis divergências. Para isso, as telas foram estruturadas com resumos, listas por local, indicadores de inconsistência e histórico de ações, evidenciando a ligação entre o processamento RFID e a tomada de decisão operacional.
 
 O painel inicial apresenta uma visão geral do inventário e das atividades recentes. Nele, o usuário consegue observar a quantidade de leitores, itens ativos e inconsistências abertas, além de consultar rapidamente leituras e eventos recentes. Essa tela funciona como ponto de entrada para a rotina de acompanhamento do sistema, conforme ilustrado na Figura \ref{fig:sistema-dashboard}.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figs/sistema/sistema-dashboard.png}
 \caption{Painel inicial do sistema de inventário RFID}
+\includegraphics[width=\textwidth]{figs/sistema/sistema-dashboard.png}
 \legend{Fonte: Elaborado pelo autor (2026).}
 \label{fig:sistema-dashboard}
 \end{figure}
 
-A tela de patrimônio organiza os itens por local, permitindo visualizar quais bens estão associados a espaços como Colegiado, Laboratório 4A e Sala 1245. Essa organização favorece a conferência patrimonial, pois aproxima a consulta do modo como os bens são verificados no ambiente físico. A Figura \ref{fig:sistema-itens} apresenta essa forma de organização.
+A tela de patrimônio organiza os itens por local, permitindo visualizar quais bens estão associados a espaços como Colegiado, Laboratório 4A e Sala 1245. Essa organização favorece a conferência patrimonial, pois aproxima a consulta do modo como os bens são verificados no ambiente físico e permite observar divergências entre registro lógico e localização detectada. A Figura \ref{fig:sistema-itens} apresenta essa forma de organização.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figs/sistema/sistema-itens.png}
 \caption{Tela de consulta dos itens patrimoniais por local}
+\includegraphics[width=\textwidth]{figs/sistema/sistema-itens.png}
 \legend{Fonte: Elaborado pelo autor (2026).}
 \label{fig:sistema-itens}
 \end{figure}
@@ -69,18 +69,18 @@ A auditoria patrimonial é a funcionalidade responsável por comparar o que se e
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figs/sistema/sistema-auditoria.png}
 \caption{Tela de auditoria patrimonial com RFID}
+\includegraphics[width=\textwidth]{figs/sistema/sistema-auditoria.png}
 \legend{Fonte: Elaborado pelo autor (2026).}
 \label{fig:sistema-auditoria}
 \end{figure}
 
-Quando a conferência identifica diferença entre o inventário esperado e o resultado observado, o sistema registra inconsistências. Essas ocorrências auxiliam a análise posterior, indicando situações como item não encontrado, local divergente ou tag desconhecida. A Figura \ref{fig:sistema-inconsistencias} apresenta a tela destinada ao acompanhamento dessas pendências.
+Quando a conferência identifica diferença entre o inventário esperado e o resultado observado, o sistema registra inconsistências. Essas ocorrências auxiliam a análise posterior, indicando situações como item não encontrado, local divergente ou tag desconhecida. Com isso, o protótipo demonstra que a leitura RFID não é tratada apenas como captura de dados, mas como insumo para controle e decisão patrimonial. A Figura \ref{fig:sistema-inconsistencias} apresenta a tela destinada ao acompanhamento dessas pendências.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figs/sistema/sistema-inconsistencias.png}
 \caption{Tela de acompanhamento de inconsistências patrimoniais}
+\includegraphics[width=\textwidth]{figs/sistema/sistema-inconsistencias.png}
 \legend{Fonte: Elaborado pelo autor (2026).}
 \label{fig:sistema-inconsistencias}
 \end{figure}
@@ -89,8 +89,8 @@ Por fim, o log operacional reúne o histórico das ações relevantes realizadas
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figs/sistema/sistema-log.png}
 \caption{Tela de histórico operacional do sistema}
+\includegraphics[width=\textwidth]{figs/sistema/sistema-log.png}
 \legend{Fonte: Elaborado pelo autor (2026).}
 \label{fig:sistema-log}
 \end{figure}
@@ -100,6 +100,8 @@ Por fim, o log operacional reúne o histórico das ações relevantes realizadas
 A validação funcional foi realizada em ambiente controlado, utilizando um computador pessoal, um leitor RFID de proximidade de baixo custo e uma única tag RFID. Os testes verificaram o fluxo da aplicação: leitura da tag, captura pelo adaptador intermediário, envio do evento à API REST, processamento pelo backend, persistência dos dados e atualização do inventário. Essa evidência corresponde à integração física do protótipo com um dispositivo real de captura dentro do escopo experimental definido.
 
 Os resultados foram organizados em duas frentes. A primeira corresponde ao fluxo validado fisicamente, envolvendo leitor USB de proximidade, uma tag, comunicador intermediário, envio à API e atualização do sistema. A segunda corresponde à verificação funcional por software, incluindo o evento \textit{motion\_detected}, a abertura de janela de leitura, o retorno do comando \textit{start\_reading} e o processamento de eventos \textit{tags\_read}. A Tabela \ref{tab:testes-funcionais} sintetiza os principais resultados, destacando a evidência obtida e o escopo de cada aspecto avaliado.
+
+Os cenários definidos no protocolo de validação foram utilizados como referência para verificar o comportamento observável do protótipo. A evidência considerada concentrou-se na execução do fluxo de leitura física com leitor USB de proximidade e na verificação dos fluxos de API associados ao envio de eventos, ao processamento pelo backend, ao registro persistente das informações, à atualização do inventário e à geração de histórico ou inconsistência quando aplicável. Assim, a análise restringe-se à comprovação funcional da arquitetura computacional implementada, sem generalizar resultados para desempenho físico de infraestrutura RFID.
 
 \begin{table}[H]
 \centering
@@ -126,4 +128,6 @@ Fluxo sensor/gateway & Verificação por software: os eventos \textit{motion\_de
 
 Após a síntese apresentada na tabela, observa-se que o fluxo essencial da solução foi contemplado: o sistema cadastra entidades, recebe eventos RFID, processa leituras, atualiza o inventário, gera histórico e identifica inconsistências. Os testes funcionais de software complementaram a validação física ao verificar comportamentos centrais do fluxo RFID, como ativação por evento de movimento, retorno do comando \textit{start\_reading}, processamento de \textit{tags\_read}, deduplicação e cenários de auditoria. Essa forma de avaliação deve ser entendida como validação funcional do protótipo no escopo definido \cite{ieee1012}.
 
-Portanto, o resultado principal do protótipo é a comprovação funcional da arquitetura de software. A validação com computador pessoal, leitor de proximidade e uma tag demonstra que a aplicação é capaz de operar com eventos RFID reais em ambiente controlado, comprovando o fluxo computacional necessário ao inventário com RFID. A evolução para sensores de presença e antenas RFID de maior alcance permanece como continuidade natural da proposta.
+Esses resultados dialogam com a literatura ao confirmar, em escala de protótipo, a importância da integração entre dispositivos de identificação, middleware e sistemas de informação para apoiar processos de inventário \cite{alwadi2017,razzaque2015}. A atualização do inventário a partir de eventos RFID também se relaciona às discussões sobre redução de esforço manual e aumento de rastreabilidade no controle patrimonial \cite{brito2019,mashayekhy2022}. Ao mesmo tempo, a validação delimitada ao leitor de proximidade reforça a cautela apontada por estudos sobre implantação e interferência em RFID, pois métricas físicas de alcance, leitura simultânea e desempenho ambiental dependem de ensaios próprios \cite{ting2013,knapp2022}.
+
+Portanto, o resultado principal do protótipo é a comprovação funcional da arquitetura de software proposta para apoiar o inventário patrimonial com RFID. A validação com computador pessoal, leitor de proximidade e uma tag demonstra que a aplicação é capaz de operar com eventos RFID reais em ambiente controlado, enquanto os testes funcionais de API verificam o comportamento previsto para o fluxo escalável. A evolução para sensores de presença e antenas RFID de maior alcance permanece como continuidade natural da proposta.

@@ -78,7 +78,7 @@ A Figura \ref{fig:casos-uso-rfid} apresenta os principais casos de uso funcionai
 
 \input{figs/casos_uso_rfid.tex}
 
-A Figura \ref{fig:diagrama-banco-rfid} apresenta o diagrama entidade-relacionamento das principais tabelas persistidas pelo backend. O diagrama destaca as entidades centrais do invent\'ario RFID, como locais, leitores, itens patrimoniais, leituras, eventos de hist\'orico, auditorias e inconsist\^encias, bem como suas chaves e rela\c{c}\~oes principais.
+A Figura \ref{fig:diagrama-banco-rfid} apresenta uma visão simplificada das principais tabelas e campos persistidos pelo backend. O diagrama destaca as entidades centrais do invent\'ario RFID, como locais, leitores, itens patrimoniais, leituras, eventos de hist\'orico, auditorias e inconsist\^encias, bem como suas chaves e rela\c{c}\~oes principais, sem substituir a descrição completa do esquema implementado no código-fonte. Campos auxiliares, parâmetros operacionais e detalhes específicos de implementação permanecem documentados no modelo da aplicação e não são reproduzidos integralmente na figura, cujo objetivo é sintetizar a organização conceitual dos dados.
 
 \input{figs/diagrama_banco_rfid.tex}
 
@@ -111,3 +111,29 @@ Além da validação física com o leitor de proximidade, foram considerados tes
 Os cenários de teste previstos incluem: cadastro de locais, leitores e itens; leitura de tag cadastrada; atualização do local físico; geração de histórico operacional; detecção de tag desconhecida; identificação de item em local divergente; tratamento de leituras duplicadas; auditoria com itens encontrados e não encontrados; e comportamento diante de leitor offline. Esses cenários permitem avaliar se o sistema cumpre a função de receber eventos, processá-los e refletir seus efeitos no inventário patrimonial, em alinhamento com a verificação de conformidade entre requisitos, implementação e uso pretendido \cite{ieee1012}.
 
 A validação deste trabalho foi apresentada como funcional, sem atribuir métricas quantitativas que dependeriam de ensaios específicos com maior quantidade de etiquetas, antenas RFID de longo alcance e condições controladas de ambiente. Portanto, os resultados concentram-se na observação dos comportamentos esperados do sistema e na verificação do fluxo lógico implementado.
+
+A Tabela \ref{tab:protocolo-validacao} sintetiza o protocolo utilizado para orientar a validação funcional do protótipo, relacionando os principais cenários avaliados, as entradas utilizadas e os critérios de sucesso observados.
+
+\begin{table}[H]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\caption{Protocolo de validação funcional do protótipo}
+\label{tab:protocolo-validacao}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Cenário} & \textbf{Endpoint ou ação} & \textbf{Payload ou entrada} & \textbf{Critério de sucesso} \\
+\midrule
+Ativação de leitura & POST \newline /api/eventos/rfid/ & Evento \textit{motion\_detected}; identificador da antena & Janela de leitura aberta e comando \textit{start\_reading} disponibilizado. \\
+Consulta de comando & GET \newline /api/eventos/rfid/ \newline comando/ & Identificador da antena & Retorno de \textit{start\_reading} durante janela ativa ou \textit{idle} fora dela. \\
+Envio de tags & POST \newline /api/eventos/rfid/ & Evento \textit{tags\_read}; lista de tags & Tags normalizadas, registradas e processadas pelo backend. \\
+Auditoria local & POST \newline /api/antenas/\{id\}/ \newline auditar/ & Duração da janela de leitura & Comparação entre itens esperados e tags lidas no local auditado. \\
+Auditoria geral & POST \newline /api/auditoria/ \newline broadcast/ & Duração da janela de leitura & Leitores participantes recebem contexto de auditoria. \\
+Inconsistências & Leitura ou auditoria com divergência & Tag desconhecida, item ausente ou local divergente & Inconsistência e histórico operacional registrados para acompanhamento. \\
+\bottomrule
+\end{tabularx}
+\legend{Fonte: Elaborado pelo autor (2026).}
+\end{table}
+\normalsize
+\renewcommand{\arraystretch}{1}
