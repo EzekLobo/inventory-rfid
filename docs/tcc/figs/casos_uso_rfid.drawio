@@ -1,0 +1,101 @@
+<mxfile host="app.diagrams.net" modified="2026-06-01T00:00:00.000Z" agent="Codex" version="24.7.17" type="device">
+  <diagram name="Casos de uso RFID" id="casos-uso-rfid">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="system" value="Sistema Web de Inventário RFID" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#666666;fontStyle=1;fontSize=16;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="210" y="40" width="750" height="735" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="tecnico" value="Usuário / Técnico" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#ffffff;strokeColor=#444444;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="70" y="230" width="55" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="admin" value="Administrador" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#ffffff;strokeColor=#444444;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="70" y="560" width="55" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="comunicador" value="Comunicador intermediário&lt;br&gt;(validado com leitor USB)" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#ffffff;strokeColor=#444444;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="170" width="55" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="gateway" value="Leitor ou gateway em rede&lt;br&gt;(verificado por software)" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#ffffff;strokeColor=#444444;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="515" width="55" height="95" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="auth" value="Autenticar usuário" style="ellipse;whiteSpace=wrap;html=1;fillColor=#eef4ff;strokeColor=#5b7fb3;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="265" y="90" width="175" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="painel" value="Consultar painel inicial" style="ellipse;whiteSpace=wrap;html=1;fillColor=#eef4ff;strokeColor=#5b7fb3;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="265" y="150" width="175" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="leitores" value="Consultar leitores RFID" style="ellipse;whiteSpace=wrap;html=1;fillColor=#eef4ff;strokeColor=#5b7fb3;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="265" y="210" width="175" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="auditorias" value="Consultar auditorias" style="ellipse;whiteSpace=wrap;html=1;fillColor=#eef4ff;strokeColor=#5b7fb3;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="265" y="270" width="175" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="patrimonio" value="Consultar patrimônio" style="ellipse;whiteSpace=wrap;html=1;fillColor=#eef4ff;strokeColor=#5b7fb3;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="265" y="330" width="175" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="log" value="Consultar log operacional" style="ellipse;whiteSpace=wrap;html=1;fillColor=#eef4ff;strokeColor=#5b7fb3;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="265" y="390" width="175" height="45" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="cadastros" value="Gerenciar locais, leitores e itens" style="ellipse;whiteSpace=wrap;html=1;fillColor=#eef4ff;strokeColor=#5b7fb3;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="515" y="135" width="210" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="acionar" value="Acionar leitor" style="ellipse;whiteSpace=wrap;html=1;fillColor=#eef4ff;strokeColor=#5b7fb3;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="535" y="215" width="170" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="auditoria" value="Executar auditoria patrimonial" style="ellipse;whiteSpace=wrap;html=1;fillColor=#eef4ff;strokeColor=#5b7fb3;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="515" y="295" width="210" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="inconsistencias" value="Consultar inconsistências" style="ellipse;whiteSpace=wrap;html=1;fillColor=#eef4ff;strokeColor=#5b7fb3;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="520" y="380" width="200" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="resolver" value="Resolver inconsistência" style="ellipse;whiteSpace=wrap;html=1;fillColor=#eef4ff;strokeColor=#5b7fb3;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="520" y="455" width="200" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="usuarios" value="Gerenciar usuários e permissões" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff8dc;strokeColor=#b58b00;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="515" y="665" width="210" height="50" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="polling" value="Consultar comando de leitura" style="ellipse;whiteSpace=wrap;html=1;fillColor=#eefaf0;strokeColor=#5d9b6a;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="750" y="155" width="175" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="eventos" value="Receber eventos RFID" style="ellipse;whiteSpace=wrap;html=1;fillColor=#eefaf0;strokeColor=#5d9b6a;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="760" y="315" width="155" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="comandoDireto" value="Enviar comando direto de leitura" style="ellipse;whiteSpace=wrap;html=1;fillColor=#eefaf0;strokeColor=#5d9b6a;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="740" y="535" width="195" height="50" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="genAdminTecnico" value="especializacao" style="endArrow=block;endFill=0;html=1;rounded=0;dashed=1;strokeColor=#444444;fontSize=11;" edge="1" parent="1" source="admin" target="tecnico">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="tecnicoAuth" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#444444;" edge="1" parent="1" source="tecnico" target="auth"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="tecnicoPainel" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#444444;" edge="1" parent="1" source="tecnico" target="painel"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="tecnicoLeitores" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#444444;" edge="1" parent="1" source="tecnico" target="leitores"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="tecnicoAuditorias" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#444444;" edge="1" parent="1" source="tecnico" target="auditorias"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="tecnicoPatrimonio" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#444444;" edge="1" parent="1" source="tecnico" target="patrimonio"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="tecnicoLog" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#444444;" edge="1" parent="1" source="tecnico" target="log"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="tecnicoCadastros" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#444444;" edge="1" parent="1" source="tecnico" target="cadastros"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="tecnicoAcionar" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#444444;" edge="1" parent="1" source="tecnico" target="acionar"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="tecnicoAuditoria" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#444444;" edge="1" parent="1" source="tecnico" target="auditoria"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="tecnicoInconsistencias" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#444444;" edge="1" parent="1" source="tecnico" target="inconsistencias"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="tecnicoResolver" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#444444;" edge="1" parent="1" source="tecnico" target="resolver"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="adminUsuarios" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#444444;" edge="1" parent="1" source="admin" target="usuarios"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="comunicadorPolling" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#444444;" edge="1" parent="1" source="comunicador" target="polling"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="comunicadorEventos" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#444444;" edge="1" parent="1" source="comunicador" target="eventos"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="gatewayComando" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#444444;" edge="1" parent="1" source="gateway" target="comandoDireto"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="gatewayEventos" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#444444;" edge="1" parent="1" source="gateway" target="eventos"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="includeAuditoriaAcionar" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="endArrow=open;html=1;rounded=0;dashed=1;strokeColor=#666666;fontSize=11;" edge="1" parent="1" source="auditoria" target="acionar">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
