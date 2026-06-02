@@ -82,7 +82,7 @@ A Figura \ref{fig:diagrama-banco-rfid} apresenta uma visão simplificada das pri
 
 \input{figs/diagrama_banco_rfid.tex}
 
-A Figura \ref{fig:fluxo-atividade-rfid} complementa a modelagem ao apresentar o fluxograma geral de processamento de eventos RFID. O fluxograma evidencia a existência de dois caminhos de acionamento: o caminho validado fisicamente com leitor USB de proximidade e o caminho escalável, verificado por software, no qual um sensor ou gateway envia evento de presença para abertura da janela de leitura.
+A Figura \ref{fig:fluxo-atividade-rfid} complementa a modelagem ao apresentar o fluxograma geral de processamento de eventos RFID. O fluxograma distingue a origem da auditoria, que pode ser iniciada manualmente pelo usuário ou automaticamente por sensor/gateway, e evidencia duas rotas de comunicação com os dispositivos de leitura: uma rota validada fisicamente com leitor USB de proximidade e comunicador intermediário, e uma rota escalável, verificada por software, para leitores ou gateways com comunicação HTTP direta. Em ambos os casos, as leituras são processadas pela API, comparadas com os itens previstos e registradas como resultado da auditoria, com geração de inconsistências quando houver divergência.
 
 \input{figs/fluxo_atividade_rfid.tex}
 
