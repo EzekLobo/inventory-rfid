@@ -44,6 +44,8 @@ RF07 & Processar leituras RFID, validar tags, tratar duplicidades e atualizar o 
 RF08 & Registrar histórico operacional das leituras, movimentações, auditorias e alterações relevantes. \\
 RF09 & Identificar e registrar inconsistências, como local divergente, item não encontrado e tag desconhecida. \\
 RF10 & Permitir a consulta do inventário, do log operacional, das auditorias e das inconsistências registradas. \\
+RF11 & Permitir o acompanhamento e a resolução de inconsistências registradas no processo de inventário. \\
+RF12 & Permitir configurações administrativas de usuários e permissões como apoio ao uso operacional do sistema. \\
 \bottomrule
 \end{tabularx}
 \legend{Fonte: Elaborado pelo autor (2026).}
@@ -74,7 +76,7 @@ RNF07 & A validação física do protótipo deve ser delimitada ao hardware disp
 
 Os requisitos funcionais foram posteriormente verificados nas telas, endpoints e fluxos de leitura implementados, conforme discutido nos resultados. Com isso, evita-se repetir a mesma relação em uma matriz adicional, mantendo a rastreabilidade no encadeamento entre requisitos, modelagem, implementação e validação.
 
-A Figura \ref{fig:casos-uso-rfid} apresenta os principais casos de uso funcionais do protótipo. Os requisitos não funcionais não são representados como casos de uso, pois descrevem atributos de qualidade e restrições da solução, sendo por isso apresentados junto ao levantamento de requisitos.
+A Figura \ref{fig:casos-uso-rfid} apresenta os principais casos de uso funcionais do protótipo, incluindo as ações executadas por usuários, administradores e componentes de integração RFID. Regras internas de processamento, como deduplicação, validação de tags e atualização de localização, aparecem nos requisitos e nos fluxos de atividade, mas não são tratadas como casos de uso independentes por não representarem interação direta de um ator com o sistema. Os requisitos não funcionais não são representados como casos de uso, pois descrevem atributos de qualidade e restrições da solução, sendo por isso apresentados junto ao levantamento de requisitos.
 
 \input{figs/casos_uso_rfid.tex}
 
@@ -108,7 +110,7 @@ A validação foi definida como funcional e qualitativa, pois o objetivo foi ver
 
 Além da validação física com o leitor de proximidade, foram considerados testes funcionais de software para verificar o comportamento da API diante de eventos representativos de sensores ou gateways. Nesses testes, o evento de presença é simulado por meio de uma requisição do tipo \textit{motion\_detected}, permitindo verificar se o backend abre a janela de leitura, disponibiliza o comando \textit{start\_reading} e processa posteriormente eventos \textit{tags\_read}. Essa verificação demonstra a aderência da arquitetura ao fluxo escalável proposto.
 
-Os cenários de teste previstos incluem: cadastro de locais, leitores e itens; leitura de tag cadastrada; atualização do local físico; geração de histórico operacional; detecção de tag desconhecida; identificação de item em local divergente; tratamento de leituras duplicadas; auditoria com itens encontrados e não encontrados; e comportamento diante de leitor offline. Esses cenários permitem avaliar se o sistema cumpre a função de receber eventos, processá-los e refletir seus efeitos no inventário patrimonial, em alinhamento com a verificação de conformidade entre requisitos, implementação e uso pretendido \cite{ieee1012}.
+Os cenários de teste previstos incluem operações administrativas básicas, como acesso autenticado e cadastros necessários ao inventário, e fluxos diretamente relacionados ao processamento RFID, como leitura de tag cadastrada, atualização do local físico, geração de histórico operacional, detecção de tag desconhecida, identificação de item em local divergente, tratamento de leituras duplicadas, acompanhamento de inconsistências, auditoria com itens encontrados e não encontrados e comportamento diante de leitor offline. Esses cenários permitem avaliar se o sistema cumpre a função de receber eventos, processá-los e refletir seus efeitos no inventário patrimonial, em alinhamento com a verificação de conformidade entre requisitos, implementação e uso pretendido \cite{ieee1012}.
 
 A validação deste trabalho foi apresentada como funcional, sem atribuir métricas quantitativas que dependeriam de ensaios específicos com maior quantidade de etiquetas, antenas RFID de longo alcance e condições controladas de ambiente. Portanto, os resultados concentram-se na observação dos comportamentos esperados do sistema e na verificação do fluxo lógico implementado.
 
@@ -125,12 +127,15 @@ A Tabela \ref{tab:protocolo-validacao} sintetiza o protocolo utilizado para orie
 \toprule
 \textbf{Cenário} & \textbf{Endpoint ou ação} & \textbf{Payload ou entrada} & \textbf{Critério de sucesso} \\
 \midrule
+Operações administrativas básicas & Login e cadastros de locais, leitores e itens & Credenciais de usuário e dados das entidades necessárias ao inventário & Usuário autenticado consegue preparar os dados utilizados nos fluxos de leitura e auditoria, conforme permissões configuradas. \\
 Ativação de leitura & POST \newline /api/eventos/rfid/ & Evento \textit{motion\_detected}; identificador da antena & Janela de leitura aberta e comando \textit{start\_reading} disponibilizado. \\
 Consulta de comando & GET \newline /api/eventos/rfid/ \newline comando/ & Identificador da antena & Retorno de \textit{start\_reading} durante janela ativa ou \textit{idle} fora dela. \\
 Envio de tags & POST \newline /api/eventos/rfid/ & Evento \textit{tags\_read}; lista de tags & Tags normalizadas, registradas e processadas pelo backend. \\
 Auditoria local & POST \newline /api/antenas/\{id\}/ \newline auditar/ & Duração da janela de leitura & Comparação entre itens esperados e tags lidas no local auditado. \\
 Auditoria geral & POST \newline /api/auditoria/ \newline broadcast/ & Duração da janela de leitura & Leitores participantes recebem contexto de auditoria. \\
-Inconsistências & Leitura ou auditoria com divergência & Tag desconhecida, item ausente ou local divergente & Inconsistência e histórico operacional registrados para acompanhamento. \\
+Inconsistências e duplicidades & Leitura ou auditoria com divergência; reenvio de tag em curto intervalo & Tag desconhecida, item ausente, local divergente ou leitura repetida & Inconsistências registradas para acompanhamento e duplicidades tratadas sem repetição indevida de efeitos no inventário. \\
+Acompanhamento de inconsistências & Consulta e ações de resolução em inconsistências registradas & Inconsistência selecionada e ação de regularização, quando aplicável & Pendência consultada ou marcada como resolvida, com registro no histórico operacional. \\
+Leitor offline & Acionamento ou auditoria de leitor sem comunicação recente & Leitor cadastrado sem ping recente & Ação bloqueada ou sinalizada como indisponível, sem abertura indevida de janela de leitura. \\
 \bottomrule
 \end{tabularx}
 \legend{Fonte: Elaborado pelo autor (2026).}
