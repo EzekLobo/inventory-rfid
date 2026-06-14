@@ -155,3 +155,17 @@ frontend/.next/
 frontend/out/
 frontend/.env.local
 frontend/tsconfig.tsbuildinfo
+
+# Personal/AI/local workspace
+.codex/
+.cursor/
+.continue/
+.claude/
+.github-copilot/
+.windsurf/
+.tmp-chrome-captures/
+tmp_pdf_preview/
+prompts-private/
+*.prompt.md
+*.conversation.md
+*.chat.md
