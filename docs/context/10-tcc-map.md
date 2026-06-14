@@ -12,6 +12,14 @@
 - `docs/tcc/CapV_TestesRes.tex`: conclusao, contribuicoes, limites e trabalhos futuros.
 - `docs/tcc/TCC.bib`: referencias bibliograficas.
 
+## Automacao
+
+- `scripts/compile_tcc_pdf.ps1`: recompila `docs/tcc/PRINCIPAL.pdf`.
+- `scripts/check_tcc_all.ps1`: recompila e resume o status do PDF, referencias,
+  citacoes e erros de LaTeX em um unico comando.
+- `scripts/watch_tcc.ps1`: observa alteracoes em `docs/tcc` e recompila o TCC
+  automaticamente apos salvar arquivos relevantes.
+
 ## Leitura Por Tipo de Pedido
 
 - Coerencia de requisito/modelagem: Capitulo III + `docs/context/20-application-map.md`.
