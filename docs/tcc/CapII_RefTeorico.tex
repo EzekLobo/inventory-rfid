@@ -41,30 +41,30 @@ No contexto brasileiro, \citeonline{brito2019} analisaram a viabilidade de etiqu
 
 Quanto à implantação de sistemas RFID, \citeonline{ting2013} propuseram um framework de implementação e destacaram que a adoção da tecnologia exige planejamento, análise de custos, riscos e limitações técnicas. \citeonline{knapp2022}, por sua vez, sistematizaram fontes de interferência que podem comprometer o desempenho de instalações RFID. Essas contribuições reforçam a necessidade de tratar a validação física de alcance e taxa de leitura como uma etapa distinta da validação funcional do software.
 
-Para sintetizar o posicionamento deste trabalho em relação à literatura consultada, a Tabela \ref{tab:trabalhos-relacionados} apresenta uma comparação entre os principais estudos utilizados como referência e a contribuição desenvolvida neste TCC.
+Para sintetizar o posicionamento deste trabalho em relação à literatura consultada, a Tabela \ref{tab:trabalhos-relacionados} compara os principais estudos utilizados como referência com a contribuição do protótipo desenvolvido. A comparação sintetiza a contribuição de cada referência e evidencia como o protótipo se posiciona diante desses recortes.
 
 \begin{table}[H]
 \centering
-\footnotesize
-\setlength{\tabcolsep}{3pt}
-\renewcommand{\arraystretch}{1.14}
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\renewcommand{\arraystretch}{1.10}
 \caption{Síntese comparativa dos trabalhos relacionados}
 \label{tab:trabalhos-relacionados}
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
 \toprule
-\textbf{Referência} & \textbf{Foco} & \textbf{Contribuição observada} & \textbf{Relação com este trabalho} \\
+\textbf{Referência} & \textbf{Contribuição do trabalho relacionado} & \textbf{Diferencial evidenciado pelo protótipo} \\
 \midrule
-\citeonline{alwadi2017} & Inventário com RFID & Discutiu soluções RFID para gestão de inventário e integração com sistemas. & Fundamenta a adoção de RFID como mecanismo de apoio ao inventário. \\
-\citeonline{abijaude2017} & IoT e inventário automatizado & Apresentou uma plataforma de inventário associada ao conceito de Internet das Coisas. & Aproxima a proposta da integração entre dispositivos físicos e aplicação web. \\
-\citeonline{brito2019} & Controle patrimonial público & Analisou o uso de etiquetas inteligentes na administração pública. & Reforça a relevância institucional do controle patrimonial com identificação automatizada. \\
-\citeonline{budiyanto2024} & RFID aplicado a inventário & Discutiu benefícios, barreiras e limitações da tecnologia em processos de inventário. & Apoia a análise dos ganhos esperados e das cautelas técnicas da solução. \\
-\citeonline{bandara2024} & RFID de baixo custo & Explorou uma solução de inventário com componentes RFID acessíveis. & Relaciona-se à validação experimental com hardware de baixo custo. \\
-\citeonline{mashayekhy2022} & IoT e gestão de inventário & Analisou impactos de RFID, sensores e middleware na integração de inventários. & Relaciona a proposta à integração entre dispositivos de captura e sistemas de informação. \\
-\citeonline{ting2013} & Implantação de RFID & Apresentou um framework de implementação e destacou riscos, custos e planejamento. & Sustenta a necessidade de delimitar o escopo de validação física. \\
-\citeonline{knapp2022} & Interferência em instalações RFID & Sistematizou fatores físicos e ambientais que podem afetar leituras RFID. & Justifica tratar medições de desempenho como continuidade experimental. \\
+\citeonline{alwadi2017} & Revisão de soluções RFID para inventário e integração com sistemas. & Materializa, em um fluxo funcional, a integração entre leitura RFID, API e atualização do inventário patrimonial. \\
+\citeonline{abijaude2017} & Plataforma InventoryIoT, com RFID, middleware, sensores, inventário lógico/físico e sistema web. & Em relação à referência mais próxima, concentra o recorte na leitura RFID como evidência de auditoria patrimonial, com comparação esperado-observado e tratamento de divergências. \\
+\citeonline{brito2019} & Estudo de viabilidade de etiquetas inteligentes no controle patrimonial público. & Operacionaliza uma rotina de controle patrimonial com RFID em uma aplicação funcional, indo além da discussão de viabilidade. \\
+\citeonline{budiyanto2024} & Revisão sobre benefícios, integração e barreiras de RFID em inventário. & Incorpora RFID ao inventário sem extrapolar benefícios não medidos, mantendo a validação restrita ao fluxo funcional implementado. \\
+\citeonline{bandara2024} & Solução RFID de baixo custo voltada à eficiência operacional. & Explora hardware acessível como meio de reduzir a barreira de validação do fluxo, integrando o leitor a uma rotina de auditoria com API, histórico e divergências. \\
+\citeonline{mashayekhy2022} & Revisão sobre IoT, RFID, sensores e middleware na gestão de inventário. & Aplica a lógica de eventos e middleware ao recorte patrimonial, processando leituras e registrando seus efeitos no inventário. \\
+\citeonline{ting2013} & Framework para implantação RFID, com custos, riscos e planejamento. & Separa a validação funcional da aplicação de uma implantação física ampla, evitando extrapolar resultados de desempenho RFID. \\
+\citeonline{knapp2022} & Revisão sobre interferências físicas e ambientais em RFID. & Reconhece os limites físicos da tecnologia ao não tratar alcance, interferência ou leitura simultânea como resultados validados. \\
 \bottomrule
 \end{tabularx}
 \legend{Fonte: Elaborado pelo autor (2026).}
 \end{table}
 
-Este TCC diferencia-se por implementar um protótipo web completo para gestão patrimonial com cadastro de leitores, locais, itens, eventos RFID, auditoria, inconsistências e histórico operacional. A validação com leitor de proximidade de baixo custo não esgota a análise física da tecnologia RFID, mas demonstra a viabilidade do fluxo computacional necessário para que a solução seja posteriormente integrada a dispositivos de maior alcance ou sensores de acionamento.
+Desse modo, o diferencial do protótipo não está apenas na adoção de RFID, mas na transformação das leituras em evidências para auditoria patrimonial, com comparação entre itens esperados e detectados, registro de divergências e histórico operacional, sem extrapolar a validação física realizada.
