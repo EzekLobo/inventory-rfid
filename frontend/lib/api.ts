@@ -243,6 +243,8 @@ export const api = {
     clearCache();
   },
 
+  clearCache,
+
   me() {
     return request<CurrentUser>("/auth/me/", { useCache: false });
   },

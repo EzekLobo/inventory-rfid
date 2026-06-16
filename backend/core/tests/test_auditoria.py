@@ -254,7 +254,9 @@ class AuditoriaApiTests(PipelineAndApiTestBase):
         )
         self.assertEqual(command_response.status_code, 200)
         self.assertEqual(command_response.data["command"], "start_reading")
-        self.assertEqual(command_response.data["payload"], {"audit": True})
+        self.assertTrue(command_response.data["payload"]["audit"])
+        self.assertTrue(command_response.data["payload"]["auditoria_execucao_id"].startswith("manual-"))
+        self.assertIn("auditoria_criada_em", command_response.data["payload"])
 
         tags_response = self.client.post(
             "/api/eventos/rfid/",

@@ -23,7 +23,7 @@ type AuditHistoryRow = {
   data: string;
   local: string;
   leitor: string;
-  status: "Aguardando leitura" | "Processada" | "Encerrada sem leitura";
+  status: "Aguardando leitura" | "Aguardando processamento" | "Processada" | "Sem leitura processada";
   esperados: number | null;
   encontrados: number | null;
   naoEncontrados: number | null;
@@ -76,10 +76,18 @@ function totalFromMetadata(metadata: AuditoriaMetadados) {
 
 function statusFromAudit(waiting: boolean, finalizaEm: unknown, now: number): AuditHistoryRow["status"] {
   if (!waiting) return "Processada";
-  if (typeof finalizaEm === "string" && Number.isFinite(new Date(finalizaEm).getTime()) && new Date(finalizaEm).getTime() <= now) {
-    return "Encerrada sem leitura";
+  if (typeof finalizaEm === "string") {
+    const finalizaEmTime = new Date(finalizaEm).getTime();
+    if (Number.isFinite(finalizaEmTime) && finalizaEmTime <= now) {
+      return now - finalizaEmTime > 5000 ? "Sem leitura processada" : "Aguardando processamento";
+    }
   }
   return "Aguardando leitura";
+}
+
+function statusFromJob(job: AuditoriaJob, now: number): AuditHistoryRow["status"] {
+  if (job.status === "concluido" || job.concluido_em) return "Sem leitura processada";
+  return statusFromAudit(true, job.finaliza_em, now);
 }
 
 function HelpTip({ text }: { text: string }) {
@@ -118,6 +126,7 @@ export default function AuditoriaPage() {
     const requestId = ++loadRequestId.current;
     setError("");
     try {
+      api.clearCache();
       const [antenasData, jobsData, processedData, itensData] = await Promise.all([
         api.listAntenas({ page_size: 100 }),
         api.listAuditorias({ page_size: 25 }),
@@ -186,6 +195,26 @@ export default function AuditoriaPage() {
         .map((audit) => Number(audit.metadados.auditoria_job_id))
         .filter((id) => Number.isFinite(id))
     );
+    const processedExecutionIds = new Set(
+      processedAudits
+        .map((audit) => String(audit.metadados.auditoria_execucao_id || ""))
+        .filter(Boolean)
+    );
+    const hasProcessedForStart = (metadata: AuditoriaMetadados, createdAt: string) => {
+      const executionId = String(metadata.auditoria_execucao_id || "");
+      if (executionId && processedExecutionIds.has(executionId)) return true;
+
+      const createdTime = new Date(createdAt).getTime();
+      const antennaId = Number(metadata.antenna_id);
+      const localId = Number(metadata.local_id);
+      return processedAudits.some((audit) => {
+        const processedMetadata = audit.metadados;
+        if (processedMetadata.evento !== "auditoria_processada") return false;
+        if (Number(processedMetadata.antenna_id) !== antennaId || Number(processedMetadata.local_id) !== localId) return false;
+        const processedTime = new Date(audit.criado_em).getTime();
+        return Number.isFinite(createdTime) && Number.isFinite(processedTime) && processedTime >= createdTime && processedTime - createdTime <= 5 * 60 * 1000;
+      });
+    };
     const processedRows = processedAudits.map((audit) => {
       const metadata = audit.metadados;
       const waiting = metadata.evento === "auditoria_iniciada";
@@ -217,7 +246,7 @@ export default function AuditoriaPage() {
         data: job.iniciado_em,
         local: uniqueValues(job.leitores.map((leitor) => leitor.local_nome)).join(", ") || "-",
         leitor: `${job.leitores.length} leitor(es)`,
-        status: statusFromAudit(true, job.finaliza_em, now),
+        status: statusFromJob(job, now),
         esperados: null,
         encontrados: null,
         naoEncontrados: null,
@@ -229,7 +258,12 @@ export default function AuditoriaPage() {
         itensDivergentes: [],
         tagsDesconhecidas: []
       }));
-    return [...processedRows, ...jobRows].sort(
+    const visibleProcessedRows = processedRows.filter((row) => {
+      const sourceAudit = processedAudits.find((audit) => `processed-${audit.id}` === row.id);
+      if (!sourceAudit || sourceAudit.metadados.evento !== "auditoria_iniciada") return true;
+      return !hasProcessedForStart(sourceAudit.metadados, sourceAudit.criado_em);
+    });
+    return [...visibleProcessedRows, ...jobRows].sort(
       (left, right) => new Date(right.data).getTime() - new Date(left.data).getTime()
     );
   }, [itens, jobs, now, processedAudits]);
@@ -297,8 +331,13 @@ export default function AuditoriaPage() {
     if (!activeProcess || now < activeProcess.expiresAt) return;
 
     setActiveProcess(null);
-    setFinishedMessage("Auditoria RFID concluída. Dados atualizados.");
+    setFinishedMessage("Janela de auditoria encerrada. Aguardando processamento das leituras.");
     load();
+    const retryTimers = [
+      window.setTimeout(load, 1500),
+      window.setTimeout(load, 3500)
+    ];
+    return () => retryTimers.forEach((timer) => window.clearTimeout(timer));
   }, [activeProcess, now]);
 
   const processProgress = activeProcess
@@ -526,7 +565,7 @@ export default function AuditoriaPage() {
                     <td>{audit.local}</td>
                     <td>{audit.leitor}</td>
                     <td className="status-cell">
-                      <span className={audit.status === "Processada" ? "badge green" : audit.status === "Encerrada sem leitura" ? "badge red" : "badge"}>
+                      <span className={audit.status === "Processada" ? "badge green" : audit.status === "Sem leitura processada" ? "badge yellow" : "badge"}>
                         {audit.status}
                       </span>
                     </td>
@@ -561,6 +600,7 @@ export default function AuditoriaPage() {
 
 function AuditDetail({ audit }: { audit: AuditHistoryRow }) {
   const waiting = audit.status === "Aguardando leitura";
+  const noProcessedReading = audit.status === "Sem leitura processada";
 
   return (
     <div className="audit-detail">
@@ -568,7 +608,9 @@ function AuditDetail({ audit }: { audit: AuditHistoryRow }) {
         <div className="state-box">
           {waiting
             ? "A auditoria ainda está aguardando uma leitura do RFID."
-            : "A janela foi encerrada sem leitura processada para detalhar."}
+            : noProcessedReading
+              ? "A janela foi encerrada, mas nenhum evento RFID foi recebido para este leitor. Verifique se o comunicador está apontado para o leitor correto."
+              : "A janela foi encerrada e a tela ainda está aguardando o processamento das leituras."}
         </div>
       ) : (
         <>

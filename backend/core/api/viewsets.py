@@ -178,6 +178,7 @@ class AntenaRFIDViewSet(viewsets.ModelViewSet):
             )
 
         now = timezone.now()
+        auditoria_execucao_id = f"manual-{antenna.id}-{now.strftime('%Y%m%d%H%M%S%f')}"
         antenna.ativa = True
         antenna.ultimo_acionamento = now
         antenna.ativacao_expira_em = now + timedelta(seconds=duracao)
@@ -196,6 +197,8 @@ class AntenaRFIDViewSet(viewsets.ModelViewSet):
                     "local_nome": antenna.local.nome,
                     "duracao_segundos": duracao,
                     "finaliza_em": antenna.ativacao_expira_em.isoformat(),
+                    "auditoria_execucao_id": auditoria_execucao_id,
+                    "auditoria_criada_em": now.isoformat(),
                 },
             )
         return Response(
@@ -205,7 +208,11 @@ class AntenaRFIDViewSet(viewsets.ModelViewSet):
                 "hardware_id": antenna.hardware_id,
                 "active_for_seconds": duracao,
                 "expires_at": antenna.ativacao_expira_em,
-                "payload": {"audit": True} if audit else {},
+                "payload": {
+                    "audit": True,
+                    "auditoria_execucao_id": auditoria_execucao_id,
+                    "auditoria_criada_em": now.isoformat(),
+                } if audit else {},
             },
             status=status.HTTP_200_OK,
         )
@@ -357,7 +364,11 @@ class RFIDEventosViewSet(viewsets.ViewSet):
             .first()
         )
         if timeline:
-            return {"audit": True}
+            return {
+                "audit": True,
+                "auditoria_execucao_id": timeline.metadados.get("auditoria_execucao_id"),
+                "auditoria_criada_em": timeline.metadados.get("auditoria_criada_em"),
+            }
 
         return {}
 
