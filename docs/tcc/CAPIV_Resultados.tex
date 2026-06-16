@@ -97,28 +97,29 @@ Por fim, o log operacional reúne o histórico das ações relevantes realizadas
 
 \section{Resultados da validação funcional}
 
-A validação funcional foi realizada em ambiente controlado, utilizando um computador pessoal, um leitor RFID de proximidade de baixo custo e uma única tag RFID. Os testes verificaram o fluxo da aplicação: leitura da tag, captura pelo adaptador intermediário, envio do evento à API REST, processamento pelo backend, persistência dos dados e atualização do inventário. Essa evidência corresponde à integração física do protótipo com um dispositivo real de captura dentro do escopo experimental definido.
+A validação funcional foi realizada em ambiente controlado com um leitor RFID USB de proximidade, uma tag física e o comunicador intermediário responsável por enviar os eventos à API REST. Além dos testes exploratórios realizados durante o desenvolvimento, a etapa final de validação foi organizada em cenários funcionais previamente definidos. Cada cenário foi executado três vezes em cada um de dois ambientes computacionais distintos, totalizando seis execuções por cenário. Essa distribuição teve como finalidade verificar a repetibilidade do fluxo de software em mais de uma instalação, mantendo constantes o leitor RFID e a tag utilizados.
 
-Os resultados foram organizados em duas frentes. A primeira corresponde ao fluxo validado fisicamente, envolvendo leitor USB de proximidade, uma tag, comunicador intermediário, envio à API e atualização do sistema. A segunda corresponde à verificação funcional por software, incluindo o evento \textit{motion\_detected}, a abertura de janela de leitura, o retorno do comando \textit{start\_reading} e o processamento de eventos \textit{tags\_read}. A Tabela \ref{tab:testes-funcionais} sintetiza os principais resultados, destacando a evidência obtida e o escopo de cada aspecto avaliado.
+O foco da análise foi a comparação entre inventário lógico e inventário físico. O inventário lógico corresponde aos registros cadastrados no sistema, como item, tag e local esperado. O inventário físico corresponde ao resultado formado pela leitura RFID durante a auditoria, incluindo itens detectados, ausentes, divergentes ou tags sem cadastro. Desse modo, os testes não buscaram medir desempenho físico da tecnologia RFID, mas verificar se o sistema transforma eventos de leitura em informações úteis para auditoria patrimonial.
 
-Os cenários definidos no protocolo de validação foram utilizados como referência para verificar o comportamento observável do protótipo. A evidência considerada concentrou-se na execução do fluxo de leitura física com leitor USB de proximidade e na verificação dos fluxos de API associados ao envio de eventos, ao processamento pelo backend, ao registro persistente das informações, à atualização do inventário e à geração de histórico ou inconsistência quando aplicável. Assim, a análise restringe-se à comprovação funcional da arquitetura computacional implementada, sem generalizar resultados para desempenho físico de infraestrutura RFID.
+A quantidade de execuções não foi utilizada como amostragem estatística, mas como mecanismo de confirmação funcional. A repetição dos cenários permitiu observar se o sistema mantinha comportamento consistente na captura, envio, processamento, classificação e registro dos eventos RFID. A Tabela \ref{tab:testes-funcionais} apresenta a síntese da validação final.
 
 \begin{table}[H]
 \centering
-\footnotesize
-\setlength{\tabcolsep}{4pt}
-\renewcommand{\arraystretch}{1.15}
-\caption{Síntese da validação funcional do protótipo}
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\renewcommand{\arraystretch}{1.13}
+\caption{Validação final dos cenários funcionais}
 \label{tab:testes-funcionais}
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{3.6cm}}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.25cm}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}X>{\centering\arraybackslash}p{1.05cm}>{\centering\arraybackslash}p{1.05cm}>{\centering\arraybackslash}p{0.9cm}>{\raggedright\arraybackslash}p{2.2cm}}
 \toprule
-\textbf{Aspecto avaliado} & \textbf{Evidência de validação} & \textbf{Escopo da evidência} \\
+\textbf{Cenário} & \textbf{Entrada controlada} & \textbf{Relação com inventário lógico/físico} & \textbf{Comp. 1} & \textbf{Comp. 2} & \textbf{Total} & \textbf{Resultado} \\
 \midrule
-Cadastros e configuração & Teste funcional: locais, leitores e itens patrimoniais foram cadastrados e ficaram disponíveis para os fluxos de leitura. & Verificação realizada no ambiente de software. \\
-Leitura RFID USB & Validação física controlada: a tag de proximidade foi lida pelo leitor USB, capturada pelo comunicador intermediário e enviada à API. & Uso de uma tag e leitura por aproximação direta. \\
-Processamento do inventário & Teste funcional integrado: o evento \textit{tags\_read} foi processado, com registro de histórico e atualização do item. & Métricas físicas fora do escopo experimental. \\
-Inconsistências e auditoria & Teste funcional: o sistema registrou situações como tag desconhecida, local divergente e itens ausentes em auditoria. & Evidência obtida em cenário controlado. \\
-Fluxo sensor/gateway & Verificação por software: os eventos \textit{motion\_detected}, \textit{start\_reading} e \textit{tags\_read} foram tratados pela API. & Fluxo preservado para validação física posterior. \\
+Leitura conhecida com itens ausentes & Tag cadastrada lida em auditoria do Laboratório 4A & Item conhecido foi detectado no inventário físico e itens esperados não lidos foram classificados como ausentes. & 3 & 3 & 6 & Sucesso nas execuções. \\
+Resolução de inconsistência & Pendência aberta após auditoria & Divergência registrada entre inventário lógico e físico pôde ser acompanhada e encerrada pelo usuário. & 3 & 3 & 6 & Resolução registrada. \\
+Tag desconhecida & Tag física lida sem cadastro ativo correspondente & O inventário físico apresentou uma tag que não possuía item no inventário lógico. & 3 & 3 & 6 & Inconsistência gerada. \\
+Local divergente & Tag de item do Laboratório 4A associada à auditoria da Sala 1245 & Item conhecido apareceu em local físico diferente do local lógico cadastrado. & 3 & 3 & 6 & Divergência identificada. \\
+Duplicidade de leitura & Mesma tag aproximada várias vezes na janela ativa & Leituras repetidas foram consolidadas para não distorcer o inventário físico processado. & 3 & 3 & 6 & Uma tag processada. \\
+Leitor sem resposta & Auditoria encerrada sem evento RFID processado & Não houve formação de inventário físico para a janela de auditoria. & 3 & 3 & 6 & Estado sinalizado. \\
 \bottomrule
 \end{tabularx}
 \legend{Fonte: Elaborado pelo autor (2026).}
@@ -126,8 +127,35 @@ Fluxo sensor/gateway & Verificação por software: os eventos \textit{motion\_de
 \normalsize
 \renewcommand{\arraystretch}{1}
 
-Após a síntese apresentada na tabela, observa-se que o fluxo essencial da solução foi contemplado: o sistema cadastra entidades, recebe eventos RFID, processa leituras, atualiza o inventário, gera histórico e identifica inconsistências. Os testes funcionais de software complementaram a validação física ao verificar comportamentos centrais do fluxo RFID, como ativação por evento de movimento, retorno do comando \textit{start\_reading}, processamento de \textit{tags\_read}, deduplicação e cenários de auditoria. Essa forma de avaliação deve ser entendida como validação funcional do protótipo no escopo definido \cite{ieee1012}.
+Os resultados mostram que a contribuição do protótipo não se limita à leitura de uma tag. O sistema recebe o evento RFID, valida a entrada, interpreta o leitor associado, compara o resultado com os registros lógicos e produz uma consequência operacional. Nos casos de item ausente, tag desconhecida e local divergente, a leitura é convertida em evidência de inconsistência. No caso de duplicidade, o sistema evita que múltiplas aproximações da mesma tag distorçam o inventário físico processado. No caso de ausência de resposta, a interface informa que a janela terminou sem leitura processada, evitando que o usuário permaneça em espera indefinida.
 
-Esses resultados dialogam com a literatura ao confirmar, em escala de protótipo, a importância da integração entre dispositivos de identificação, middleware e sistemas de informação para apoiar processos de inventário \cite{alwadi2017,razzaque2015}. A atualização do inventário a partir de eventos RFID também se relaciona às discussões sobre redução de esforço manual e aumento de rastreabilidade no controle patrimonial \cite{brito2019,mashayekhy2022}. Ao mesmo tempo, a validação delimitada ao leitor de proximidade reforça a cautela apontada por estudos sobre implantação e interferência em RFID, pois métricas físicas de alcance, leitura simultânea e desempenho ambiental dependem de ensaios próprios \cite{ting2013,knapp2022}.
+A Tabela \ref{tab:rastreabilidade-validacao} relaciona os principais requisitos funcionais às evidências obtidas na validação. Essa matriz sintetiza a conexão entre os requisitos definidos no Capítulo III, a implementação apresentada neste capítulo e os resultados observados na etapa final de testes.
 
-Portanto, o resultado principal do protótipo é a comprovação funcional da arquitetura de software proposta para apoiar o inventário patrimonial com RFID. A validação com computador pessoal, leitor de proximidade e uma tag demonstra que a aplicação é capaz de operar com eventos RFID reais em ambiente controlado, enquanto os testes funcionais de API verificam o comportamento previsto para o fluxo escalável. A evolução para sensores de presença e antenas RFID de maior alcance permanece como continuidade natural da proposta.
+\begin{table}[H]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\caption{Rastreabilidade entre requisitos e evidências de validação}
+\label{tab:rastreabilidade-validacao}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{1.4cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{4.2cm}}
+\toprule
+\textbf{Req.} & \textbf{Comportamento verificado} & \textbf{Evidência na validação} \\
+\midrule
+RF05 & Abertura de janelas de leitura e auditoria para leitores cadastrados. & Auditorias iniciadas para os cenários de leitura, divergência e ausência de resposta. \\
+RF06 & Recebimento de eventos RFID por interface padronizada. & Eventos \textit{tags\_read} enviados pelo comunicador intermediário e processados pela API. \\
+RF07 & Processamento de tags, validação e tratamento de duplicidades. & Tag conhecida processada, tag desconhecida classificada e duplicidades consolidadas. \\
+RF08 & Registro de histórico operacional. & Eventos de auditoria, leitura e resolução registrados para consulta posterior. \\
+RF09 & Identificação de inconsistências patrimoniais. & Geração de inconsistências de item ausente, tag desconhecida e local divergente. \\
+RF10 & Consulta de inventário, auditorias e inconsistências. & Resultados conferidos nas telas de auditoria, inconsistências e log operacional. \\
+RF11 & Acompanhamento e resolução de inconsistências. & Pendência selecionada, regularizada e registrada como resolvida no histórico. \\
+\bottomrule
+\end{tabularx}
+\legend{Fonte: Elaborado pelo autor (2026).}
+\end{table}
+\normalsize
+\renewcommand{\arraystretch}{1}
+
+Esses resultados dialogam com a literatura ao confirmar, em escala de protótipo, a importância da integração entre dispositivos de identificação, middleware e sistemas de informação para apoiar processos de inventário \cite{alwadi2017,razzaque2015}. A comparação entre inventário lógico e inventário físico também se relaciona às discussões sobre redução de esforço manual e aumento de rastreabilidade no controle patrimonial \cite{brito2019,mashayekhy2022}. Ao mesmo tempo, a validação delimitada ao leitor de proximidade reforça a cautela apontada por estudos sobre implantação e interferência em RFID, pois métricas físicas de alcance, leitura simultânea e desempenho ambiental dependem de ensaios próprios \cite{ting2013,knapp2022}.
+
+Portanto, o resultado principal do protótipo é a comprovação funcional da arquitetura de software proposta para apoiar o inventário patrimonial com RFID. A validação com dois ambientes computacionais, um leitor de proximidade e uma tag demonstra que a aplicação é capaz de operar com eventos RFID reais em ambiente controlado, comparar inventário lógico e físico e registrar inconsistências relevantes para a rotina patrimonial. A evolução para múltiplas tags, sensores físicos de presença e antenas RFID de maior alcance permanece como continuidade natural da proposta.
