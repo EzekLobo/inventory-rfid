@@ -169,3 +169,7 @@ prompts-private/
 *.prompt.md
 *.conversation.md
 *.chat.md
+
+# TCC support notes / manual validation drafts
+docs/tcc/casos_teste_validacao_manual.md
+docs/tcc/registro_execucao_validacao_manual.md
