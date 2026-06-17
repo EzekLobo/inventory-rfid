@@ -3,7 +3,7 @@ from core.tests.base import *  # noqa: F403
 
 class PipelineApiTests(PipelineAndApiTestBase):
     def test_manual_deactivation_marks_item_inactive_and_registers_timeline(self):
-        self.client.force_authenticate(user=self.user)
+        self.client.force_authenticate(user=self.admin)
         response = self.client.post(
             f"/api/itens/{self.item.id}/inativar/",
             {"motivo": "baixa patrimonial"},
@@ -17,7 +17,7 @@ class PipelineApiTests(PipelineAndApiTestBase):
             TimelineEvento.objects.filter(
                 item=self.item,
                 tipo=TimelineEvento.TipoEvento.BAIXA,
-                usuario=self.user,
+                usuario=self.admin,
                 metadados__motivo="baixa patrimonial",
             ).exists()
         )
@@ -27,8 +27,9 @@ class PipelineApiTests(PipelineAndApiTestBase):
         RFIDEventProcessor().process_ping(antenna=self.destino_antenna)
         list_response = self.client.get("/api/antenas/")
         self.assertEqual(list_response.status_code, 200)
-        self.assertEqual(list_response.data[0]["id"], self.destino_antenna.id)
-        self.assertEqual(list_response.data[0]["modo_comando"], AntenaRFID.ModoComando.POLLING)
+        results = self._results(list_response)
+        self.assertEqual(results[0]["id"], self.destino_antenna.id)
+        self.assertEqual(results[0]["modo_comando"], AntenaRFID.ModoComando.POLLING)
 
         activate_response = self.client.post(
             f"/api/antenas/{self.destino_antenna.id}/ativar/",
@@ -48,7 +49,8 @@ class PipelineApiTests(PipelineAndApiTestBase):
         self.client.force_authenticate(user=self.user)
         list_response = self.client.get("/api/antenas/")
         self.assertEqual(list_response.status_code, 200)
-        self.assertFalse(list_response.data[0]["online"])
+        results = self._results(list_response)
+        self.assertFalse(results[0]["online"])
 
         activate_response = self.client.post(
             f"/api/antenas/{self.destino_antenna.id}/ativar/",
@@ -62,8 +64,9 @@ class PipelineApiTests(PipelineAndApiTestBase):
         self.client.force_authenticate(user=self.user)
         response = self.client.get("/api/itens/?search=OSC")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["tag_id"], self.item.tag_id)
+        results = self._results(response)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["tag_id"], self.item.tag_id)
 
     def test_timeline_endpoint_filters_me(self):
         self.client.force_authenticate(user=self.user)
@@ -75,7 +78,7 @@ class PipelineApiTests(PipelineAndApiTestBase):
         )
         response = self.client.get("/api/timeline/?me=true")
         self.assertEqual(response.status_code, 200)
-        self.assertGreaterEqual(len(response.data), 1)
+        self.assertGreaterEqual(len(self._results(response)), 1)
 
     def test_timeline_endpoint_filters_operational_log(self):
         other_item = ItemPatrimonial.objects.create(
@@ -110,9 +113,10 @@ class PipelineApiTests(PipelineAndApiTestBase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["item_nome"], self.item.nome)
-        self.assertEqual(response.data[0]["item_tag"], self.item.tag_id)
+        results = self._results(response)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["item_nome"], self.item.nome)
+        self.assertEqual(results[0]["item_tag"], self.item.tag_id)
 
     def test_movimentacao_alias_uses_topology_pipeline(self):
         self.client.force_authenticate(user=self.user)

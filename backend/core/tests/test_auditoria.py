@@ -316,11 +316,12 @@ class AuditoriaApiTests(PipelineAndApiTestBase):
         response = self.client.get("/api/inconsistencias/?resolvida=false")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0]["auditoria_id"], "job-42")
-        self.assertIn("Auditoria #42", response.data[0]["auditoria_label"])
-        self.assertEqual(response.data[0]["auditoria_local_nome"], "Lab 4A")
-        self.assertEqual(response.data[0]["auditoria_antenna_id"], self.destino_antenna.id)
-        self.assertEqual(response.data[0]["auditoria_criada_em"], "2026-05-16T10:30:00+00:00")
+        results = self._results(response)
+        self.assertEqual(results[0]["auditoria_id"], "job-42")
+        self.assertIn("Auditoria #42", results[0]["auditoria_label"])
+        self.assertEqual(results[0]["auditoria_local_nome"], "Lab 4A")
+        self.assertEqual(results[0]["auditoria_antenna_id"], self.destino_antenna.id)
+        self.assertEqual(results[0]["auditoria_criada_em"], "2026-05-16T10:30:00+00:00")
 
     def test_inconsistencias_endpoint_groups_manual_audit_without_job(self):
         NotificacaoInconsistencia.objects.create(
@@ -342,9 +343,10 @@ class AuditoriaApiTests(PipelineAndApiTestBase):
         response = self.client.get("/api/inconsistencias/?resolvida=false")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0]["auditoria_id"], "manual-1-20260516103000000000")
-        self.assertIn("Auditoria manual", response.data[0]["auditoria_label"])
-        self.assertEqual(response.data[0]["auditoria_local_nome"], "Lab 4A")
+        results = self._results(response)
+        self.assertEqual(results[0]["auditoria_id"], "manual-1-20260516103000000000")
+        self.assertIn("Auditoria manual", results[0]["auditoria_label"])
+        self.assertEqual(results[0]["auditoria_local_nome"], "Lab 4A")
 
     def test_inconsistencias_endpoint_marks_operational_inconsistency_without_audit(self):
         NotificacaoInconsistencia.objects.create(
@@ -361,11 +363,20 @@ class AuditoriaApiTests(PipelineAndApiTestBase):
         response = self.client.get("/api/inconsistencias/?resolvida=false")
 
         self.assertEqual(response.status_code, 200)
-        self.assertIsNone(response.data[0]["auditoria_id"])
-        self.assertEqual(response.data[0]["auditoria_label"], "Sem auditoria / fluxo operacional")
+        results = self._results(response)
+        self.assertIsNone(results[0]["auditoria_id"])
+        self.assertEqual(results[0]["auditoria_label"], "Sem auditoria / fluxo operacional")
 
-    def test_broadcast_requires_admin(self):
+    def test_broadcast_follows_technical_audit_permission(self):
         self.client.force_authenticate(user=self.user)
+        allowed = self.client.post("/api/auditoria/broadcast/", {"duracao_segundos": 8}, format="json")
+        self.assertEqual(allowed.status_code, 200)
+        self.assertTrue(AuditoriaJob.objects.filter(id=allowed.data["auditoria_job_id"]).exists())
+
+        permissions = TecnicoPermissoes.atual()
+        permissions.executar_auditoria = False
+        permissions.save(update_fields=["executar_auditoria"])
+
         forbidden = self.client.post("/api/auditoria/broadcast/", {"duracao_segundos": 8}, format="json")
         self.assertEqual(forbidden.status_code, 403)
 

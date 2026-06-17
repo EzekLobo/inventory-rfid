@@ -12,6 +12,7 @@ from core.domain.models import (
     ItemPatrimonial,
     Local,
     NotificacaoInconsistencia,
+    TecnicoPermissoes,
     TimelineEvento,
 )
 from core.infrastructure.rfid_handler import RFIDEventProcessor
@@ -61,4 +62,7 @@ class PipelineAndApiTestBase(TestCase):
 
     def _rfid_headers(self):
         return {"HTTP_X_RFID_TOKEN": settings.RFID_INGEST_TOKEN}
+
+    def _results(self, response):
+        return response.data.get("results", response.data)
 

@@ -65,7 +65,7 @@ A tela de patrimônio organiza os itens por local, permitindo visualizar quais b
 \label{fig:sistema-itens}
 \end{figure}
 
-A auditoria patrimonial é a funcionalidade responsável por comparar o que se espera encontrar em determinado local com o que foi registrado durante a leitura RFID. A tela correspondente permite iniciar a conferência e também simular leituras para fins de teste funcional, sem alterar o propósito principal da solução. A Figura \ref{fig:sistema-auditoria} mostra a interface utilizada para essa etapa.
+A auditoria patrimonial é a funcionalidade responsável por comparar o que se espera encontrar em determinado local com o que foi registrado durante a leitura RFID. A tela correspondente permite iniciar a conferência e também simular leituras para fins de teste funcional, sem alterar o propósito principal da solução. Esse recurso de simulação foi utilizado como apoio à verificação de regras da aplicação, enquanto a validação física permaneceu limitada às leituras realizadas com o leitor RFID USB de proximidade, a tag física e o comunicador intermediário. A Figura \ref{fig:sistema-auditoria} mostra a interface utilizada para essa etapa.
 
 \begin{figure}[H]
 \centering
@@ -101,7 +101,7 @@ A validação funcional foi realizada em ambiente controlado com um leitor RFID 
 
 O foco da análise foi a comparação entre inventário lógico e inventário físico. O inventário lógico corresponde aos registros cadastrados no sistema, como item, tag e local esperado. O inventário físico corresponde ao resultado formado pela leitura RFID durante a auditoria, incluindo itens detectados, ausentes, divergentes ou tags sem cadastro. Desse modo, os testes não buscaram medir desempenho físico da tecnologia RFID, mas verificar se o sistema transforma eventos de leitura em informações úteis para auditoria patrimonial.
 
-A quantidade de execuções não foi utilizada como amostragem estatística, mas como mecanismo de confirmação funcional. A repetição dos cenários permitiu observar se o sistema mantinha comportamento consistente na captura, envio, processamento, classificação e registro dos eventos RFID. A Tabela \ref{tab:testes-funcionais} apresenta a síntese da validação final.
+A quantidade de execuções não foi utilizada como amostragem estatística, mas como mecanismo de confirmação funcional. A repetição dos cenários permitiu observar se o sistema mantinha comportamento consistente na captura, envio, processamento, classificação e registro dos eventos RFID. Conforme definido na metodologia, o leitor de proximidade e a tag física foram mantidos constantes para evitar que variações de hardware fossem confundidas com comportamento do software. A Tabela \ref{tab:testes-funcionais} apresenta a síntese da validação final.
 
 \begin{table}[H]
 \centering

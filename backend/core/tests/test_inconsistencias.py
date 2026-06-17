@@ -30,7 +30,8 @@ class InconsistenciaApiTests(PipelineAndApiTestBase):
         self.client.force_authenticate(user=self.user)
         response = self.client.get("/api/inconsistencias/?resolvida=false")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)
+        results = self._results(response)
+        self.assertEqual(len(results), 1)
 
     def test_confirmar_local_updates_logical_location_and_timeline(self):
         inconsistencia = NotificacaoInconsistencia.objects.create(

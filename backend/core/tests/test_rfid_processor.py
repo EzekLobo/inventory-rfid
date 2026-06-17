@@ -129,7 +129,7 @@ class RFIDApiTests(PipelineAndApiTestBase):
         self.assertEqual(active.data["payload"], {})
 
     def test_antenas_endpoint_accepts_http_command_configuration(self):
-        self.client.force_authenticate(user=self.user)
+        self.client.force_authenticate(user=self.admin)
         response = self.client.post(
             "/api/antenas/",
             {
@@ -155,7 +155,7 @@ class RFIDApiTests(PipelineAndApiTestBase):
         self.assertEqual(antenna.command_token, "secret-token")
 
     def test_http_command_mode_requires_command_url(self):
-        self.client.force_authenticate(user=self.user)
+        self.client.force_authenticate(user=self.admin)
         response = self.client.post(
             "/api/antenas/",
             {
