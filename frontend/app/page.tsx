@@ -34,16 +34,62 @@ export default function HomePage() {
   async function load(force = false) {
     const requestId = ++loadRequestId.current;
     setError("");
+    let visible = false;
+    const reveal = () => {
+      if (!isLatestRequest(requestId, loadRequestId)) return;
+      if (!visible) {
+        visible = true;
+        setLoading(false);
+      }
+    };
     const antenasCached = api.listAntenasCached({ page_size: 5 }, { force });
     const resumoCached = api.resumoCached({ force });
     const inconsistenciasCached = api.listInconsistenciasCached({ resolvida: "false", page_size: 5 }, { force });
     const timelineCached = api.listTimelineCached({ page_size: 8 }, { force });
     if (antenasCached.data && resumoCached.data && inconsistenciasCached.data && timelineCached.data) {
       applyData(antenasCached.data, resumoCached.data, inconsistenciasCached.data, timelineCached.data);
-      setLoading(false);
+      reveal();
     } else {
       setLoading(true);
     }
+
+    antenasCached.promise
+      .then((data) => {
+        if (!isLatestRequest(requestId, loadRequestId)) return;
+        setAntenas(data.results);
+        reveal();
+      })
+      .catch(() => null);
+
+    resumoCached.promise
+      .then((data) => {
+        if (!isLatestRequest(requestId, loadRequestId)) return;
+        setResumo(data);
+        reveal();
+      })
+      .catch(() => null);
+
+    inconsistenciasCached.promise
+      .then((data) => {
+        if (!isLatestRequest(requestId, loadRequestId)) return;
+        setInconsistencias(data.results);
+        reveal();
+      })
+      .catch(() => null);
+
+    timelineCached.promise
+      .then((data) => {
+        if (!isLatestRequest(requestId, loadRequestId)) return;
+        setTimeline(data.results);
+      })
+      .catch((timelineError) => {
+        if (!isLatestRequest(requestId, loadRequestId)) return;
+        setTimeline([]);
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[home] Falha ao carregar atividade recente", timelineError);
+        }
+      });
+
     try {
       const [antenasResult, resumoResult, inconsistenciasResult, timelineResult] = await Promise.allSettled([
         antenasCached.promise,
@@ -56,9 +102,6 @@ export default function HomePage() {
       if (resumoResult.status === "rejected") throw resumoResult.reason;
       if (inconsistenciasResult.status === "rejected") throw inconsistenciasResult.reason;
 
-      setAntenas(antenasResult.value.results);
-      setResumo(resumoResult.value);
-      setInconsistencias(inconsistenciasResult.value.results);
       if (timelineResult.status === "fulfilled") {
         setTimeline(timelineResult.value.results);
       } else {
@@ -72,7 +115,7 @@ export default function HomePage() {
       setError(err instanceof Error ? err.message : "Não foi possível carregar o painel.");
     } finally {
       if (isLatestRequest(requestId, loadRequestId)) {
-        setLoading(false);
+        reveal();
       }
     }
   }
