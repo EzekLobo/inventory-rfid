@@ -19,7 +19,6 @@ import type {
 } from "@/lib/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api";
-const NORMALIZED_API_BASE_URL = API_BASE_URL.replace(/\/+$/, "");
 const RFID_TOKEN = process.env.NEXT_PUBLIC_RFID_INGEST_TOKEN || "dev-rfid-token";
 const AUTH_KEY = "inventory-rfid-auth";
 const USER_KEY = "inventory-rfid-user";
@@ -81,17 +80,13 @@ function logRequest(path: string, method: string, status: string | number, start
   console.debug(`[api] ${method} ${path} -> ${status} (${elapsedMs(startedAt)}ms)`);
 }
 
-function apiUrl(path: string) {
-  return `${NORMALIZED_API_BASE_URL}/${path.replace(/^\/+/, "")}`;
-}
-
 function requestTimeoutError(path: string, timeoutMs: number) {
   return new Error(`Tempo esgotado ao carregar ${path} (${Math.round(timeoutMs / 1000)}s). Verifique se a API esta online.`);
 }
 
 function apiConfigurationError() {
   if (isDevelopment()) return null;
-  if (/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/?/i.test(NORMALIZED_API_BASE_URL)) {
+  if (/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/?/i.test(API_BASE_URL)) {
     return new Error(
       "API de producao nao configurada. Defina NEXT_PUBLIC_API_BASE_URL na Vercel como https://ezequiellobo.pythonanywhere.com/api e faca um novo deploy."
     );
@@ -163,7 +158,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     timedOut = true;
   });
 
-  const promise = fetch(apiUrl(path), {
+  const promise = fetch(`${API_BASE_URL}${path}`, {
     ...fetchOptions,
     headers,
     signal
