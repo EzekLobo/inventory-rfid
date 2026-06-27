@@ -33,12 +33,18 @@ export default function AntenasPage() {
   const loadRequestId = useRef(0);
   const showLoading = useDelayedLoading(loading);
 
-  async function load() {
+  async function load(force = false) {
     const requestId = ++loadRequestId.current;
-    setLoading(true);
     setError("");
+    const responseCached = api.listAntenasCached({ page_size: 100 }, { force });
+    if (responseCached.data) {
+      setAntenas(responseCached.data.results);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     try {
-      const response = await api.listAntenas({ page_size: 100 });
+      const response = await responseCached.promise;
       if (!isLatestRequest(requestId, loadRequestId)) return;
       setAntenas(response.results);
     } catch (err) {
@@ -64,7 +70,7 @@ export default function AntenasPage() {
         startedAt: Date.now(),
         expiresAt: new Date(response.expires_at).getTime()
       });
-      await load();
+      await load(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao acionar leitor.");
     } finally {
@@ -88,7 +94,7 @@ export default function AntenasPage() {
     const label = activeProcess.label;
     setActiveProcess(null);
     setFinishedMessage(`${label.replace("em andamento", "concluída")}. Dados atualizados.`);
-    load();
+    load(true);
   }, [activeProcess, now]);
 
   const processProgress = activeProcess
@@ -104,7 +110,7 @@ export default function AntenasPage() {
           <h1>Leitores RFID</h1>
           <p>Acione janelas de sincronização e acompanhe o status das antenas cadastradas.</p>
         </div>
-        <button className="button ghost" type="button" onClick={load}>
+        <button className="button ghost" type="button" onClick={() => load(true)}>
           <RefreshCw size={18} />
           Atualizar
         </button>

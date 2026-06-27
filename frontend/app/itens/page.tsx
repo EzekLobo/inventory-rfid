@@ -36,12 +36,20 @@ export default function ItensPage() {
 
   const pageSize = 25;
 
-  async function load(term = search, nextPage = page) {
+  async function load(term = search, nextPage = page, force = false) {
     const requestId = ++loadRequestId.current;
-    if (itens.length === 0) setLoading(true);
     setError("");
+    const responseCached = api.listItensCached({ search: term, page: nextPage, page_size: pageSize }, { force });
+    if (responseCached.data) {
+      setItens(responseCached.data.results);
+      setPageData(responseCached.data);
+      setPage(nextPage);
+      setLoading(false);
+    } else if (itens.length === 0) {
+      setLoading(true);
+    }
     try {
-      const response = await api.listItens({ search: term, page: nextPage, page_size: pageSize });
+      const response = await responseCached.promise;
       if (!isLatestRequest(requestId, loadRequestId)) return;
       setItens(response.results);
       setPageData(response);
@@ -65,7 +73,7 @@ export default function ItensPage() {
     const requestId = ++timelineRequestId.current;
     setTimelineLoadingId(item.id);
     try {
-      const timeline = await api.listTimeline({ item_id: item.id, page_size: 25 });
+      const timeline = await api.listTimelineCached({ item_id: item.id, page_size: 25 }).promise;
       if (!isLatestRequest(requestId, timelineRequestId)) return;
       setTimelineByItem((current) => ({ ...current, [item.id]: timeline.results }));
     } catch (err) {

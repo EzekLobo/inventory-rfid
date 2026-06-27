@@ -89,9 +89,8 @@ export default function LogPage() {
 
   const pageSize = 25;
 
-  async function load(nextFilters = filters, nextPage = page) {
+  async function load(nextFilters = filters, nextPage = page, force = false) {
     const requestId = ++loadRequestId.current;
-    if (data.length === 0) setLoading(true);
     setError("");
     const validationError = validateDateFilters(nextFilters);
     if (validationError) {
@@ -100,34 +99,48 @@ export default function LogPage() {
       setLoading(false);
       return;
     }
+    const timelineCached = api.listTimelineCached({
+      search: nextFilters.search,
+      tipo: nextFilters.tipo,
+      data_inicio: toApiDate(nextFilters.data_inicio),
+      data_fim: toApiDate(nextFilters.data_fim),
+      local_id: nextFilters.local_id ? Number(nextFilters.local_id) : undefined,
+      antenna_id: nextFilters.antenna_id ? Number(nextFilters.antenna_id) : undefined,
+      me: nextFilters.me || undefined,
+      page: nextPage,
+      page_size: pageSize
+    }, { force });
+    const locaisCached = api.listLocaisCached({ page_size: 100 }, { force });
+    const antenasCached = api.listAntenasCached({ page_size: 100 }, { force });
+    if (timelineCached.data) {
+      setData(timelineCached.data.results);
+      setPageData(timelineCached.data);
+      setPage(nextPage);
+      setExpandedEventId(null);
+      if (locaisCached.data) setLocais(locaisCached.data.results);
+      if (antenasCached.data) setAntenas(antenasCached.data.results);
+      setLoading(false);
+    } else if (data.length === 0) {
+      setLoading(true);
+    }
     try {
-      const timelineData = await api.listTimeline({
-        search: nextFilters.search,
-        tipo: nextFilters.tipo,
-        data_inicio: toApiDate(nextFilters.data_inicio),
-        data_fim: toApiDate(nextFilters.data_fim),
-        local_id: nextFilters.local_id ? Number(nextFilters.local_id) : undefined,
-        antenna_id: nextFilters.antenna_id ? Number(nextFilters.antenna_id) : undefined,
-        me: nextFilters.me || undefined,
-        page: nextPage,
-        page_size: pageSize
-      });
+      const [timelineData, locaisResult, antenasResult] = await Promise.allSettled([
+        timelineCached.promise,
+        locaisCached.promise,
+        antenasCached.promise
+      ]);
       if (!isLatestRequest(requestId, loadRequestId)) return;
-      setData(timelineData.results);
-      setPageData(timelineData);
+      if (timelineData.status === "rejected") throw timelineData.reason;
+      setData(timelineData.value.results);
+      setPageData(timelineData.value);
       setPage(nextPage);
       setExpandedEventId(null);
       setLoading(false);
-
-      try {
-        const [locaisData, antenasData] = await Promise.all([api.listLocais({ page_size: 100 }), api.listAntenas({ page_size: 100 })]);
-        if (!isLatestRequest(requestId, loadRequestId)) return;
-        setLocais(locaisData.results);
-        setAntenas(antenasData.results);
-      } catch (lookupError) {
-        if (process.env.NODE_ENV === "development") {
-          console.warn("[log] Falha ao carregar filtros auxiliares", lookupError);
-        }
+      if (locaisResult.status === "fulfilled") setLocais(locaisResult.value.results);
+      if (antenasResult.status === "fulfilled") setAntenas(antenasResult.value.results);
+      if (process.env.NODE_ENV === "development") {
+        if (locaisResult.status === "rejected") console.warn("[log] Falha ao carregar locais", locaisResult.reason);
+        if (antenasResult.status === "rejected") console.warn("[log] Falha ao carregar leitores", antenasResult.reason);
       }
     } catch (err) {
       if (!isLatestRequest(requestId, loadRequestId)) return;
@@ -175,7 +188,7 @@ export default function LogPage() {
           <h1>Log operacional</h1>
           <p>Consulte eventos por contexto: itens, auditorias, inconsistências e sistema.</p>
         </div>
-        <button className="button ghost" type="button" onClick={() => load(filters)}>
+        <button className="button ghost" type="button" onClick={() => load(filters, page, true)}>
           <RefreshCw size={18} />
           Atualizar
         </button>

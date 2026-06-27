@@ -22,6 +22,7 @@ const RFID_TOKEN = process.env.NEXT_PUBLIC_RFID_INGEST_TOKEN || "dev-rfid-token"
 const AUTH_KEY = "inventory-rfid-auth";
 const USER_KEY = "inventory-rfid-user";
 const CACHE_TTL_MS = 30_000;
+const STALE_CACHE_TTL_MS = 5 * 60_000;
 const REQUEST_TIMEOUT_MS = 10_000;
 
 type RequestOptions = RequestInit & {
@@ -29,6 +30,16 @@ type RequestOptions = RequestInit & {
   rfid?: boolean;
   timeoutMs?: number;
   useCache?: boolean;
+};
+
+type CachedRequest<T> = {
+  data?: T;
+  promise: Promise<T>;
+  fromCache: boolean;
+};
+
+type CachedRequestOptions = RequestOptions & {
+  force?: boolean;
 };
 
 type CacheEntry<T> = {
@@ -101,7 +112,7 @@ function authHeader() {
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { auth, rfid, timeoutMs = REQUEST_TIMEOUT_MS, useCache: shouldUseCache, ...fetchOptions } = options;
   const method = fetchOptions.method || "GET";
-  const cacheKey = `${method}:${path}`;
+  const cacheKey = cacheKeyFor(method, path);
   const useCache = shouldUseCache === true && method === "GET";
   if (useCache) {
     const entry = cache.get(cacheKey) as CacheEntry<T> | undefined;
@@ -197,6 +208,61 @@ function clearCache() {
   cache.clear();
 }
 
+function cacheKeyFor(method: string, path: string) {
+  return `${method}:${path}`;
+}
+
+function requestCached<T>(path: string, options: CachedRequestOptions = {}): CachedRequest<T> {
+  const { force, ...requestOptions } = options;
+  const method = requestOptions.method || "GET";
+  const cacheKey = cacheKeyFor(method, path);
+  const entry = cache.get(cacheKey) as CacheEntry<T> | undefined;
+  const hasStaleData = entry?.data !== undefined;
+  const cachedData = entry?.data as T | undefined;
+
+  if (!force && hasStaleData && entry?.promise) {
+    return {
+      data: cachedData,
+      fromCache: true,
+      promise: entry.promise
+    };
+  }
+
+  if (!force && hasStaleData && entry.expiresAt > Date.now()) {
+    return {
+      data: cachedData,
+      fromCache: true,
+      promise: Promise.resolve(cachedData as T)
+    };
+  }
+
+  const promise = request<T>(path, { ...requestOptions, useCache: false })
+    .then((data) => {
+      cache.set(cacheKey, { data, expiresAt: Date.now() + STALE_CACHE_TTL_MS });
+      return data;
+    })
+    .catch((error) => {
+      if (!force && hasStaleData) {
+        cache.set(cacheKey, { data: cachedData, expiresAt: Date.now() + CACHE_TTL_MS });
+      } else {
+        cache.delete(cacheKey);
+      }
+      throw error;
+    });
+
+  if (!force && hasStaleData) {
+    cache.set(cacheKey, { data: cachedData, expiresAt: entry.expiresAt, promise });
+    return {
+      data: cachedData,
+      fromCache: true,
+      promise
+    };
+  }
+
+  cache.set(cacheKey, { promise, expiresAt: Date.now() + STALE_CACHE_TTL_MS });
+  return { fromCache: false, promise };
+}
+
 function storeUser(user: CurrentUser) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(USER_KEY, JSON.stringify(user));
@@ -270,6 +336,10 @@ export const api = {
     return request<PaginatedResponse<Usuario>>(`/usuarios/${query(paginationParams(params))}`, { useCache: true });
   },
 
+  listUsuariosCached(params: PaginationParams = {}, options: CachedRequestOptions = {}) {
+    return requestCached<PaginatedResponse<Usuario>>(`/usuarios/${query(paginationParams(params))}`, options);
+  },
+
   createUsuario(payload: Partial<Usuario> & { username: string; password: string }) {
     clearCache();
     return request<Usuario>("/usuarios/", { method: "POST", body: JSON.stringify(payload) });
@@ -289,6 +359,10 @@ export const api = {
     return request<UserPermissions>("/permissoes/tecnico/", { useCache: true });
   },
 
+  listPermissoesTecnicoCached(options: CachedRequestOptions = {}) {
+    return requestCached<UserPermissions>("/permissoes/tecnico/", options);
+  },
+
   updatePermissoesTecnico(payload: Partial<UserPermissions>) {
     clearCache();
     return request<UserPermissions>("/permissoes/tecnico/", { method: "POST", body: JSON.stringify(payload) });
@@ -298,8 +372,16 @@ export const api = {
     return request<OperacionalResumo>("/resumo/", { useCache: true });
   },
 
+  resumoCached(options: CachedRequestOptions = {}) {
+    return requestCached<OperacionalResumo>("/resumo/", options);
+  },
+
   listLocais(params: PaginationParams = {}) {
     return request<PaginatedResponse<Local>>(`/locais/${query(paginationParams(params))}`, { useCache: true });
+  },
+
+  listLocaisCached(params: PaginationParams = {}, options: CachedRequestOptions = {}) {
+    return requestCached<PaginatedResponse<Local>>(`/locais/${query(paginationParams(params))}`, options);
   },
 
   createLocal(payload: Omit<Local, "id">) {
@@ -319,6 +401,10 @@ export const api = {
 
   listAntenas(params: PaginationParams = {}) {
     return request<PaginatedResponse<Antena>>(`/antenas/${query(paginationParams(params))}`, { useCache: true });
+  },
+
+  listAntenasCached(params: PaginationParams = {}, options: CachedRequestOptions = {}) {
+    return requestCached<PaginatedResponse<Antena>>(`/antenas/${query(paginationParams(params))}`, options);
   },
 
   createAntena(payload: Pick<Antena, "nome" | "hardware_id" | "local_id" | "tipo" | "modo_comando" | "command_url" | "duracao_padrao_segundos"> & { command_token?: string }) {
@@ -367,6 +453,10 @@ export const api = {
     return request<PaginatedResponse<ItemPatrimonial>>(`/itens/${query(params)}`, { useCache: true });
   },
 
+  listItensCached(params: PaginationParams & { search?: string; ativo?: boolean | string } = {}, options: CachedRequestOptions = {}) {
+    return requestCached<PaginatedResponse<ItemPatrimonial>>(`/itens/${query(params)}`, options);
+  },
+
   createItem(payload: Pick<ItemPatrimonial, "nome" | "tag_id" | "local_logico_id" | "local_fisico_id" | "ativo">) {
     clearCache();
     return request<ItemPatrimonial>("/itens/", { method: "POST", body: JSON.stringify(payload) });
@@ -384,6 +474,13 @@ export const api = {
 
   listInconsistencias(params: PaginationParams & { resolvida?: string; tipo?: string } = {}) {
     return request<PaginatedResponse<Inconsistencia>>(`/inconsistencias/${query(params)}`, { useCache: true });
+  },
+
+  listInconsistenciasCached(
+    params: PaginationParams & { resolvida?: string; tipo?: string } = {},
+    options: CachedRequestOptions = {}
+  ) {
+    return requestCached<PaginatedResponse<Inconsistencia>>(`/inconsistencias/${query(params)}`, options);
   },
 
   resolverInconsistencia(id: number, motivo: string) {
@@ -426,12 +523,28 @@ export const api = {
     return request<PaginatedResponse<TimelineEvento>>(`/timeline/${query(params)}`, { useCache: true });
   },
 
+  listTimelineCached(filters: number | TimelineFilters = {}, options: CachedRequestOptions = {}) {
+    const params = typeof filters === "number" ? { item_id: filters } : filters;
+    return requestCached<PaginatedResponse<TimelineEvento>>(`/timeline/${query(params)}`, options);
+  },
+
   listAuditorias(params: PaginationParams = {}) {
     return request<PaginatedResponse<AuditoriaJob>>(`/auditoria/${query(paginationParams(params))}`, { useCache: true });
   },
 
+  listAuditoriasCached(params: PaginationParams = {}, options: CachedRequestOptions = {}) {
+    return requestCached<PaginatedResponse<AuditoriaJob>>(`/auditoria/${query(paginationParams(params))}`, options);
+  },
+
   listAuditoriasProcessadas(params: PaginationParams = {}) {
     return request<PaginatedResponse<AuditoriaProcessada>>(`/auditoria/processadas/${query(paginationParams(params))}`, { useCache: true });
+  },
+
+  listAuditoriasProcessadasCached(params: PaginationParams = {}, options: CachedRequestOptions = {}) {
+    return requestCached<PaginatedResponse<AuditoriaProcessada>>(
+      `/auditoria/processadas/${query(paginationParams(params))}`,
+      options
+    );
   },
 
   enviarTags(antenna_id: number, tags: string[], audit = false) {

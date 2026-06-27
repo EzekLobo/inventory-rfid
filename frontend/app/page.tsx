@@ -19,22 +19,40 @@ export default function HomePage() {
   const loadRequestId = useRef(0);
   const showLoading = useDelayedLoading(loading);
 
-  async function load() {
+  function applyData(
+    antenasData: Awaited<ReturnType<typeof api.listAntenas>>,
+    resumoData: Awaited<ReturnType<typeof api.resumo>>,
+    inconsistenciasData: Awaited<ReturnType<typeof api.listInconsistencias>>,
+    timelineData: Awaited<ReturnType<typeof api.listTimeline>>
+  ) {
+    setAntenas(antenasData.results);
+    setResumo(resumoData);
+    setInconsistencias(inconsistenciasData.results);
+    setTimeline(timelineData.results);
+  }
+
+  async function load(force = false) {
     const requestId = ++loadRequestId.current;
-    setLoading(true);
     setError("");
+    const antenasCached = api.listAntenasCached({ page_size: 5 }, { force });
+    const resumoCached = api.resumoCached({ force });
+    const inconsistenciasCached = api.listInconsistenciasCached({ resolvida: "false", page_size: 5 }, { force });
+    const timelineCached = api.listTimelineCached({ page_size: 8 }, { force });
+    if (antenasCached.data && resumoCached.data && inconsistenciasCached.data && timelineCached.data) {
+      applyData(antenasCached.data, resumoCached.data, inconsistenciasCached.data, timelineCached.data);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     try {
       const [antenasData, resumoData, inconsistenciasData, timelineData] = await Promise.all([
-        api.listAntenas({ page_size: 5 }),
-        api.resumo(),
-        api.listInconsistencias({ resolvida: "false", page_size: 5 }),
-        api.listTimeline({ page_size: 8 })
+        antenasCached.promise,
+        resumoCached.promise,
+        inconsistenciasCached.promise,
+        timelineCached.promise
       ]);
       if (!isLatestRequest(requestId, loadRequestId)) return;
-      setAntenas(antenasData.results);
-      setResumo(resumoData);
-      setInconsistencias(inconsistenciasData.results);
-      setTimeline(timelineData.results);
+      applyData(antenasData, resumoData, inconsistenciasData, timelineData);
     } catch (err) {
       if (!isLatestRequest(requestId, loadRequestId)) return;
       setError(err instanceof Error ? err.message : "Não foi possível carregar o painel.");
@@ -97,7 +115,7 @@ export default function HomePage() {
                   <h2>Operação</h2>
                   <p>Atalhos e situação recente do sistema.</p>
                 </div>
-                <button className="button ghost" type="button" onClick={load}>
+                <button className="button ghost" type="button" onClick={() => load(true)}>
                   <RefreshCw size={18} />
                   Atualizar
                 </button>

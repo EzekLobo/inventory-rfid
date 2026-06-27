@@ -71,7 +71,22 @@ export default function ConfiguracoesPage() {
   const loadRequestId = useRef(0);
   const showLoading = useDelayedLoading(loading);
 
-  async function load() {
+  function applyData(
+    locaisData: Awaited<ReturnType<typeof api.listLocais>>,
+    antenasData: Awaited<ReturnType<typeof api.listAntenas>>,
+    itensData: Awaited<ReturnType<typeof api.listItens>>,
+    usuariosData: Awaited<ReturnType<typeof api.listUsuarios>> | null,
+    permissoesData: Awaited<ReturnType<typeof api.listPermissoesTecnico>> | null
+  ) {
+    setLocais(locaisData.results);
+    setAntenas(antenasData.results);
+    setItens(itensData.results);
+    setUsuarios(usuariosData?.results || []);
+    setPermissoes(permissoesData);
+    setAntenaForm((current) => ({ ...current, local_id: current.local_id || locaisData.results[0]?.id || 0 }));
+  }
+
+  async function load(force = false) {
     const requestId = ++loadRequestId.current;
     setError("");
     if (!currentUser) {
@@ -79,21 +94,39 @@ export default function ConfiguracoesPage() {
       setLoading(false);
       return;
     }
+    const locaisCached = api.listLocaisCached({ page_size: 100 }, { force });
+    const antenasCached = api.listAntenasCached({ page_size: 100 }, { force });
+    const itensCached = api.listItensCached({ page_size: 100 }, { force });
+    const usuariosCached = currentUser.is_admin ? api.listUsuariosCached({ page_size: 100 }, { force }) : null;
+    const permissoesCached = currentUser.is_admin ? api.listPermissoesTecnicoCached({ force }) : null;
+    if (
+      locaisCached.data &&
+      antenasCached.data &&
+      itensCached.data &&
+      (!usuariosCached || usuariosCached.data) &&
+      (!permissoesCached || permissoesCached.data)
+    ) {
+      applyData(
+        locaisCached.data,
+        antenasCached.data,
+        itensCached.data,
+        usuariosCached?.data || null,
+        permissoesCached?.data || null
+      );
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     try {
       const [locaisData, antenasData, itensData, usuariosData, permissoesData] = await Promise.all([
-        api.listLocais({ page_size: 100 }),
-        api.listAntenas({ page_size: 100 }),
-        api.listItens({ page_size: 100 }),
-        currentUser.is_admin ? api.listUsuarios({ page_size: 100 }) : Promise.resolve(null),
-        currentUser.is_admin ? api.listPermissoesTecnico() : Promise.resolve(null)
+        locaisCached.promise,
+        antenasCached.promise,
+        itensCached.promise,
+        usuariosCached ? usuariosCached.promise : Promise.resolve(null),
+        permissoesCached ? permissoesCached.promise : Promise.resolve(null)
       ]);
       if (!isLatestRequest(requestId, loadRequestId)) return;
-      setLocais(locaisData.results);
-      setAntenas(antenasData.results);
-      setItens(itensData.results);
-      setUsuarios(usuariosData?.results || []);
-      setPermissoes(permissoesData);
-      setAntenaForm((current) => ({ ...current, local_id: current.local_id || locaisData.results[0]?.id || 0 }));
+      applyData(locaisData, antenasData, itensData, usuariosData, permissoesData);
     } catch (err) {
       if (!isLatestRequest(requestId, loadRequestId)) return;
       setError(err instanceof Error ? err.message : "Não foi possível carregar configurações.");
@@ -143,7 +176,7 @@ export default function ConfiguracoesPage() {
     setSuccess("");
     try {
       await action();
-      await load();
+      await load(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : failureMessage);
     } finally {
@@ -286,7 +319,7 @@ export default function ConfiguracoesPage() {
           <h1>Configurações</h1>
           <p>Organize locais, leitores e itens usados pela sincronização e auditoria RFID.</p>
         </div>
-        <button className="button ghost" type="button" onClick={load}>
+        <button className="button ghost" type="button" onClick={() => load(true)}>
           <RefreshCw size={18} />
           Atualizar
         </button>

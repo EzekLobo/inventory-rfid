@@ -74,27 +74,39 @@ export default function InconsistenciasPage() {
 
   const pageSize = 25;
 
-  async function load(nextPage = page) {
+  async function load(nextPage = page, force = false) {
     const requestId = ++loadRequestId.current;
-    if (data.length === 0) setLoading(true);
     setError("");
+    const inconsistenciasCached = api.listInconsistenciasCached({ resolvida, tipo, page: nextPage, page_size: pageSize }, { force });
+    const locaisCached = api.listLocaisCached({ page_size: 100 }, { force });
+    const itensCached = api.listItensCached({ page_size: 100 }, { force });
+    if (inconsistenciasCached.data) {
+      setData(inconsistenciasCached.data.results);
+      setPageData(inconsistenciasCached.data);
+      setPage(nextPage);
+      if (locaisCached.data) setLocais(locaisCached.data.results);
+      if (itensCached.data) setItens(itensCached.data.results);
+      setLoading(false);
+    } else if (data.length === 0) {
+      setLoading(true);
+    }
     try {
-      const inconsistenciasData = await api.listInconsistencias({ resolvida, tipo, page: nextPage, page_size: pageSize });
+      const [inconsistenciasData, locaisResult, itensResult] = await Promise.allSettled([
+        inconsistenciasCached.promise,
+        locaisCached.promise,
+        itensCached.promise
+      ]);
       if (!isLatestRequest(requestId, loadRequestId)) return;
-      setData(inconsistenciasData.results);
-      setPageData(inconsistenciasData);
+      if (inconsistenciasData.status === "rejected") throw inconsistenciasData.reason;
+      setData(inconsistenciasData.value.results);
+      setPageData(inconsistenciasData.value);
       setPage(nextPage);
       setLoading(false);
-
-      try {
-        const [locaisData, itensData] = await Promise.all([api.listLocais({ page_size: 100 }), api.listItens({ page_size: 100 })]);
-        if (!isLatestRequest(requestId, loadRequestId)) return;
-        setLocais(locaisData.results);
-        setItens(itensData.results);
-      } catch (lookupError) {
-        if (process.env.NODE_ENV === "development") {
-          console.warn("[inconsistencias] Falha ao carregar dados auxiliares", lookupError);
-        }
+      if (locaisResult.status === "fulfilled") setLocais(locaisResult.value.results);
+      if (itensResult.status === "fulfilled") setItens(itensResult.value.results);
+      if (process.env.NODE_ENV === "development") {
+        if (locaisResult.status === "rejected") console.warn("[inconsistencias] Falha ao carregar locais", locaisResult.reason);
+        if (itensResult.status === "rejected") console.warn("[inconsistencias] Falha ao carregar itens", itensResult.reason);
       }
     } catch (err) {
       if (!isLatestRequest(requestId, loadRequestId)) return;
@@ -171,7 +183,7 @@ export default function InconsistenciasPage() {
         divergentes.map((item) => api.confirmarLocalInconsistencia(item.id, "Sincronização em lote da auditoria"))
       );
       setSuccess(`${divergentes.length} locais sincronizados com sucesso.`);
-      await load();
+      await load(page, true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao sincronizar em lote.");
     } finally {
@@ -210,7 +222,7 @@ export default function InconsistenciasPage() {
         setSuccess("Tag associada ao item existente e inconsistência resolvida.");
       }
       setAction(null);
-      await load();
+      await load(page, true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível resolver a inconsistência.");
     } finally {
@@ -255,7 +267,7 @@ export default function InconsistenciasPage() {
               </select>
             </div>
           </div>
-          <button className="button ghost" type="button" onClick={() => load(page)}>
+          <button className="button ghost" type="button" onClick={() => load(page, true)}>
             <RefreshCw size={18} />
             Atualizar
           </button>
@@ -383,7 +395,7 @@ export default function InconsistenciasPage() {
             })}
           </div>
         ) : null}
-        {!loading && !error && pageData ? <PaginationControls data={pageData} page={page} pageSize={pageSize} onPageChange={load} /> : null}
+        {!loading && !error && pageData ? <PaginationControls data={pageData} page={page} pageSize={pageSize} onPageChange={(nextPage) => load(nextPage)} /> : null}
       </article>
     </section>
   );
