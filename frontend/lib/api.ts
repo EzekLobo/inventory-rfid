@@ -23,7 +23,7 @@ const AUTH_KEY = "inventory-rfid-auth";
 const USER_KEY = "inventory-rfid-user";
 const CACHE_TTL_MS = 30_000;
 const STALE_CACHE_TTL_MS = 5 * 60_000;
-const REQUEST_TIMEOUT_MS = 10_000;
+const REQUEST_TIMEOUT_MS = process.env.NODE_ENV === "development" ? 10_000 : 25_000;
 
 type RequestOptions = RequestInit & {
   auth?: boolean;

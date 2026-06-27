@@ -45,14 +45,28 @@ export default function HomePage() {
       setLoading(true);
     }
     try {
-      const [antenasData, resumoData, inconsistenciasData, timelineData] = await Promise.all([
+      const [antenasResult, resumoResult, inconsistenciasResult, timelineResult] = await Promise.allSettled([
         antenasCached.promise,
         resumoCached.promise,
         inconsistenciasCached.promise,
         timelineCached.promise
       ]);
       if (!isLatestRequest(requestId, loadRequestId)) return;
-      applyData(antenasData, resumoData, inconsistenciasData, timelineData);
+      if (antenasResult.status === "rejected") throw antenasResult.reason;
+      if (resumoResult.status === "rejected") throw resumoResult.reason;
+      if (inconsistenciasResult.status === "rejected") throw inconsistenciasResult.reason;
+
+      setAntenas(antenasResult.value.results);
+      setResumo(resumoResult.value);
+      setInconsistencias(inconsistenciasResult.value.results);
+      if (timelineResult.status === "fulfilled") {
+        setTimeline(timelineResult.value.results);
+      } else {
+        setTimeline([]);
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[home] Falha ao carregar atividade recente", timelineResult.reason);
+        }
+      }
     } catch (err) {
       if (!isLatestRequest(requestId, loadRequestId)) return;
       setError(err instanceof Error ? err.message : "Não foi possível carregar o painel.");
