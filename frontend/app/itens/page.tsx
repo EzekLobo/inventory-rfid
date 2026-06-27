@@ -29,7 +29,6 @@ export default function ItensPage() {
   const [timelineLoadingId, setTimelineLoadingId] = useState<number | null>(null);
   const [timelineError, setTimelineError] = useState("");
   const [error, setError] = useState("");
-  const [warning, setWarning] = useState("");
   const loadRequestId = useRef(0);
   const timelineRequestId = useRef(0);
   const showLoading = useDelayedLoading(loading);
@@ -37,31 +36,18 @@ export default function ItensPage() {
 
   const pageSize = 25;
 
-  async function load(term = search, nextPage = page, force = false) {
+  async function load(term = search, nextPage = page) {
     const requestId = ++loadRequestId.current;
+    if (itens.length === 0) setLoading(true);
     setError("");
-    setWarning("");
-    const cached = api.listItensCached({ search: term, page: nextPage, page_size: pageSize }, { force });
-    if (cached.data) {
-      setItens(cached.data.results);
-      setPageData(cached.data);
-      setPage(nextPage);
-      setLoading(false);
-    } else if (itens.length === 0) {
-      setLoading(true);
-    }
     try {
-      const response = await cached.promise;
+      const response = await api.listItens({ search: term, page: nextPage, page_size: pageSize });
       if (!isLatestRequest(requestId, loadRequestId)) return;
       setItens(response.results);
       setPageData(response);
       setPage(nextPage);
     } catch (err) {
       if (!isLatestRequest(requestId, loadRequestId)) return;
-      if (cached.data || itens.length > 0) {
-        setWarning("Nao foi possivel atualizar agora. Mantendo os dados carregados anteriormente.");
-        return;
-      }
       setError(err instanceof Error ? err.message : "Não foi possível carregar itens.");
     } finally {
       if (isLatestRequest(requestId, loadRequestId)) {
@@ -78,18 +64,12 @@ export default function ItensPage() {
 
     const requestId = ++timelineRequestId.current;
     setTimelineLoadingId(item.id);
-    const cached = api.listTimelineCached({ item_id: item.id, page_size: 25 });
-    if (cached.data) {
-      setTimelineByItem((current) => ({ ...current, [item.id]: cached.data!.results }));
-      setTimelineLoadingId(null);
-    }
     try {
-      const timeline = await cached.promise;
+      const timeline = await api.listTimeline({ item_id: item.id, page_size: 25 });
       if (!isLatestRequest(requestId, timelineRequestId)) return;
       setTimelineByItem((current) => ({ ...current, [item.id]: timeline.results }));
     } catch (err) {
       if (!isLatestRequest(requestId, timelineRequestId)) return;
-      if (cached.data) return;
       setTimelineError(err instanceof Error ? err.message : "Não foi possível carregar histórico do item.");
     } finally {
       if (isLatestRequest(requestId, timelineRequestId)) {
@@ -122,7 +102,7 @@ export default function ItensPage() {
           className="toolbar"
           onSubmit={(event) => {
             event.preventDefault();
-            load(search, 1, true);
+            load(search, 1);
           }}
         >
           <div className="field">
@@ -143,7 +123,6 @@ export default function ItensPage() {
 
         {showLoading ? <LoadingState /> : null}
         {error ? <ErrorState message={error} /> : null}
-        {warning ? <div className="process-feedback done">{warning}</div> : null}
         {!loading && !error && itens.length === 0 ? <EmptyState label="Nenhum item encontrado para a busca atual." /> : null}
 
         {!loading && !error && groups.length > 0 ? (

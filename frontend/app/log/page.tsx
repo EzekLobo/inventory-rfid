@@ -84,16 +84,15 @@ export default function LogPage() {
   const [expandedEventId, setExpandedEventId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [warning, setWarning] = useState("");
   const loadRequestId = useRef(0);
   const showLoading = useDelayedLoading(loading);
 
   const pageSize = 25;
 
-  async function load(nextFilters = filters, nextPage = page, force = false) {
+  async function load(nextFilters = filters, nextPage = page) {
     const requestId = ++loadRequestId.current;
+    if (data.length === 0) setLoading(true);
     setError("");
-    setWarning("");
     const validationError = validateDateFilters(nextFilters);
     if (validationError) {
       setData([]);
@@ -102,7 +101,7 @@ export default function LogPage() {
       return;
     }
     try {
-      const timelineParams = {
+      const timelineData = await api.listTimeline({
         search: nextFilters.search,
         tipo: nextFilters.tipo,
         data_inicio: toApiDate(nextFilters.data_inicio),
@@ -112,17 +111,7 @@ export default function LogPage() {
         me: nextFilters.me || undefined,
         page: nextPage,
         page_size: pageSize
-      };
-      const cached = api.listTimelineCached(timelineParams, { force });
-      if (cached.data) {
-        setData(cached.data.results);
-        setPageData(cached.data);
-        setPage(nextPage);
-        setLoading(false);
-      } else if (data.length === 0) {
-        setLoading(true);
-      }
-      const timelineData = await cached.promise;
+      });
       if (!isLatestRequest(requestId, loadRequestId)) return;
       setData(timelineData.results);
       setPageData(timelineData);
@@ -131,11 +120,7 @@ export default function LogPage() {
       setLoading(false);
 
       try {
-        const locaisCached = api.listLocaisCached({ page_size: 100 });
-        const antenasCached = api.listAntenasCached({ page_size: 100 });
-        if (locaisCached.data) setLocais(locaisCached.data.results);
-        if (antenasCached.data) setAntenas(antenasCached.data.results);
-        const [locaisData, antenasData] = await Promise.all([locaisCached.promise, antenasCached.promise]);
+        const [locaisData, antenasData] = await Promise.all([api.listLocais({ page_size: 100 }), api.listAntenas({ page_size: 100 })]);
         if (!isLatestRequest(requestId, loadRequestId)) return;
         setLocais(locaisData.results);
         setAntenas(antenasData.results);
@@ -146,10 +131,6 @@ export default function LogPage() {
       }
     } catch (err) {
       if (!isLatestRequest(requestId, loadRequestId)) return;
-      if (data.length > 0) {
-        setWarning("Nao foi possivel atualizar agora. Mantendo os dados carregados anteriormente.");
-        return;
-      }
       setError(err instanceof Error ? err.message : "Não foi possível carregar o log.");
     } finally {
       if (isLatestRequest(requestId, loadRequestId)) {
@@ -179,12 +160,12 @@ export default function LogPage() {
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    load(filters, 1, true);
+    load(filters, 1);
   }
 
   function resetFilters() {
     setFilters(emptyFilters);
-    load(emptyFilters, 1, true);
+    load(emptyFilters, 1);
   }
 
   return (
@@ -194,7 +175,7 @@ export default function LogPage() {
           <h1>Log operacional</h1>
           <p>Consulte eventos por contexto: itens, auditorias, inconsistências e sistema.</p>
         </div>
-        <button className="button ghost" type="button" onClick={() => load(filters, page, true)}>
+        <button className="button ghost" type="button" onClick={() => load(filters)}>
           <RefreshCw size={18} />
           Atualizar
         </button>
@@ -297,7 +278,6 @@ export default function LogPage() {
 
         {showLoading ? <LoadingState /> : null}
         {error ? <ErrorState message={error} /> : null}
-        {warning ? <div className="process-feedback done">{warning}</div> : null}
         {!loading && !error && data.length === 0 ? <EmptyState label="Nenhum evento encontrado para os filtros atuais." /> : null}
         {!loading && !error && data.length > 0 && visibleData.length === 0 ? <EmptyState label="Nenhum evento neste contexto." /> : null}
 

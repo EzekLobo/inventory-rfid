@@ -61,39 +61,6 @@ class OperacionalResumoViewSet(viewsets.ViewSet):
         )
 
 
-class DashboardViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
-    event_processor = RFIDEventProcessor()
-
-    def list(self, request):
-        self.event_processor.deactivate_expired_antennas()
-        self.event_processor.mark_stale_antennas_offline()
-
-        resumo = {
-            "leitores_online": AntenaRFID.objects.filter(online=True).count(),
-            "leitores_ativos": AntenaRFID.objects.filter(ativa=True).count(),
-            "itens_ativos": ItemPatrimonial.objects.filter(ativo=True).count(),
-            "inconsistencias_abertas": NotificacaoInconsistencia.objects.filter(resolvida=False).count(),
-        }
-        antenas = AntenaRFID.objects.select_related("local").order_by("id")[:5]
-        inconsistencias = (
-            NotificacaoInconsistencia.objects.select_related("item", "local_logico", "local_fisico")
-            .filter(resolvida=False)
-            .order_by("-criado_em")[:5]
-        )
-        timeline = TimelineEvento.objects.select_related("item", "usuario").order_by("-criado_em")[:8]
-
-        return Response(
-            {
-                "resumo": resumo,
-                "antenas": AntenaRFIDListSerializer(antenas, many=True).data,
-                "inconsistencias": InconsistenciaListSerializer(inconsistencias, many=True).data,
-                "timeline": TimelineListSerializer(timeline, many=True).data,
-            },
-            status=status.HTTP_200_OK,
-        )
-
-
 class AuthViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 

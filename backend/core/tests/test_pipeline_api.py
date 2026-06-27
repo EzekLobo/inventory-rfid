@@ -80,33 +80,6 @@ class PipelineApiTests(PipelineAndApiTestBase):
         self.assertEqual(response.status_code, 200)
         self.assertGreaterEqual(len(self._results(response)), 1)
 
-    def test_dashboard_endpoint_returns_home_payload(self):
-        self.client.force_authenticate(user=self.user)
-        TimelineEvento.objects.create(
-            item=self.item,
-            tipo=TimelineEvento.TipoEvento.SISTEMA,
-            mensagem="Teste dashboard",
-            usuario=self.user,
-        )
-        NotificacaoInconsistencia.objects.create(
-            item=self.item,
-            tipo=NotificacaoInconsistencia.TipoInconsistencia.LOCAL_DIVERGENTE,
-            local_logico=self.lab1,
-            local_fisico=self.lab4,
-        )
-
-        response = self.client.get("/api/dashboard/")
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            set(response.data.keys()),
-            {"resumo", "antenas", "inconsistencias", "timeline"},
-        )
-        self.assertEqual(response.data["resumo"]["itens_ativos"], 1)
-        self.assertEqual(len(response.data["antenas"]), 1)
-        self.assertEqual(len(response.data["inconsistencias"]), 1)
-        self.assertEqual(len(response.data["timeline"]), 1)
-
     def test_timeline_endpoint_filters_operational_log(self):
         other_item = ItemPatrimonial.objects.create(
             tag_id="TAG-LOG-002",

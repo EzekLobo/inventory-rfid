@@ -116,35 +116,22 @@ export default function AuditoriaPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [warning, setWarning] = useState("");
   const [activeProcess, setActiveProcess] = useState<ActiveProcess | null>(null);
   const [finishedMessage, setFinishedMessage] = useState("");
   const [now, setNow] = useState(Date.now());
   const loadRequestId = useRef(0);
   const showLoading = useDelayedLoading(loading);
 
-  async function load(force = false) {
+  async function load() {
     const requestId = ++loadRequestId.current;
     setError("");
-    setWarning("");
     try {
-      if (force) api.clearCache();
-      const antenasCached = api.listAntenasCached({ page_size: 100 }, { force });
-      const jobsCached = api.listAuditoriasCached({ page_size: 25 }, { force });
-      const processedCached = api.listAuditoriasProcessadasCached({ page_size: 25 }, { force });
-      const itensCached = api.listItensCached({ page_size: 100 }, { force });
-      if (antenasCached.data) setAntenas(antenasCached.data.results);
-      if (jobsCached.data) setJobs(jobsCached.data.results);
-      if (processedCached.data) setProcessedAudits(processedCached.data.results);
-      if (itensCached.data) setItens(itensCached.data.results);
-      if (antenasCached.data || jobsCached.data || processedCached.data || itensCached.data) {
-        setLoading(false);
-      }
+      api.clearCache();
       const [antenasData, jobsData, processedData, itensData] = await Promise.all([
-        antenasCached.promise,
-        jobsCached.promise,
-        processedCached.promise,
-        itensCached.promise
+        api.listAntenas({ page_size: 100 }),
+        api.listAuditorias({ page_size: 25 }),
+        api.listAuditoriasProcessadas({ page_size: 25 }),
+        api.listItens({ page_size: 100 })
       ]);
       if (!isLatestRequest(requestId, loadRequestId)) return;
       setAntenas(antenasData.results);
@@ -158,10 +145,6 @@ export default function AuditoriaPage() {
       setItens(itensData.results);
     } catch (err) {
       if (!isLatestRequest(requestId, loadRequestId)) return;
-      if (antenas.length > 0 || jobs.length > 0 || processedAudits.length > 0 || itens.length > 0) {
-        setWarning("Nao foi possivel atualizar agora. Mantendo os dados carregados anteriormente.");
-        return;
-      }
       setError(err instanceof Error ? err.message : "Não foi possível carregar auditorias.");
     } finally {
       if (isLatestRequest(requestId, loadRequestId)) {
@@ -374,7 +357,7 @@ export default function AuditoriaPage() {
           <h1>Auditoria RFID</h1>
           <p>Escolha vários leitores ou acione todos para auditar os locais em uma única janela operacional.</p>
         </div>
-        <button className="button ghost" type="button" onClick={() => load(true)}>
+        <button className="button ghost" type="button" onClick={load}>
           <RefreshCw size={18} />
           Atualizar
         </button>
@@ -382,7 +365,6 @@ export default function AuditoriaPage() {
 
       {showLoading ? <LoadingState /> : null}
       {error ? <ErrorState message={error} /> : null}
-      {warning ? <div className="process-feedback done">{warning}</div> : null}
 
       {activeProcess ? (
         <div className="process-feedback">

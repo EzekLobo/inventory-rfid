@@ -5,7 +5,6 @@ from core.api.viewsets import (
     AntenaRFIDViewSet,
     AuthViewSet,
     AuditoriaViewSet,
-    DashboardViewSet,
     InconsistenciaViewSet,
     ItemPatrimonialViewSet,
     LocalViewSet,
@@ -26,7 +25,6 @@ router.register("permissoes/tecnico", TecnicoPermissoesViewSet, basename="permis
 router.register("movimentacao", MovimentacaoViewSet, basename="movimentacao")
 router.register("eventos/rfid", RFIDEventosViewSet, basename="eventos-rfid")
 router.register("resumo", OperacionalResumoViewSet, basename="resumo")
-router.register("dashboard", DashboardViewSet, basename="dashboard")
 router.register("itens", ItemPatrimonialViewSet, basename="itens")
 router.register("timeline", TimelineViewSet, basename="timeline")
 router.register("inconsistencias", InconsistenciaViewSet, basename="inconsistencias")
