@@ -98,7 +98,7 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
-        "rest_framework.authentication.BasicAuthentication",
+        "core.api.authentication.CachedBasicAuthentication",
     ],
     "DEFAULT_PAGINATION_CLASS": "core.api.pagination.StandardResultsSetPagination",
     "PAGE_SIZE": 25,

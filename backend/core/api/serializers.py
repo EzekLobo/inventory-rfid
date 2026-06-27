@@ -199,12 +199,16 @@ class InconsistenciaListSerializer(serializers.ModelSerializer):
         ]
 
     def _audit_metadata(self, obj):
+        if hasattr(obj, "_serialized_audit_metadata"):
+            return obj._serialized_audit_metadata
+
         metadados = obj.metadados or {}
         auditoria_job_id = metadados.get("auditoria_job_id")
         auditoria_execucao_id = metadados.get("auditoria_execucao_id")
         audit_eventos = {"item_nao_encontrado", "item_fora_do_local_auditado", "tag_desconhecida"}
         is_audit = bool(metadados.get("audit") or auditoria_job_id or auditoria_execucao_id or metadados.get("evento") in audit_eventos)
         if not is_audit:
+            obj._serialized_audit_metadata = None
             return None
 
         if auditoria_job_id:
@@ -230,13 +234,15 @@ class InconsistenciaListSerializer(serializers.ModelSerializer):
         if antenna_nome:
             label = f"{label} / {antenna_nome}"
 
-        return {
+        audit = {
             "id": auditoria_id,
             "label": label,
             "local_nome": local_nome,
             "antenna_id": metadados.get("antenna_id"),
             "criada_em": metadados.get("auditoria_criada_em") or obj.criado_em.isoformat(),
         }
+        obj._serialized_audit_metadata = audit
+        return audit
 
     def get_auditoria_id(self, obj):
         audit = self._audit_metadata(obj)

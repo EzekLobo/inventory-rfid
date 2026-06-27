@@ -140,6 +140,9 @@ class TimelineEvento(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["criado_em", "tipo"], name="timeline_created_type_idx"),
+            models.Index(fields=["tipo", "-criado_em"], name="timeline_type_recent_idx"),
+            models.Index(fields=["item", "-criado_em"], name="timeline_item_recent_idx"),
+            models.Index(fields=["usuario", "-criado_em"], name="timeline_user_recent_idx"),
         ]
 
 
@@ -185,6 +188,9 @@ class NotificacaoInconsistencia(models.Model):
         indexes = [
             models.Index(fields=["resolvida", "tipo"], name="incons_open_type_idx"),
             models.Index(fields=["tag_id", "resolvida"], name="incons_tag_open_idx"),
+            models.Index(fields=["resolvida", "-criado_em"], name="incons_open_recent_idx"),
+            models.Index(fields=["resolvida", "tipo", "-criado_em"], name="incons_open_type_recent_idx"),
+            models.Index(fields=["item", "-criado_em"], name="incons_item_recent_idx"),
         ]
 
 
@@ -205,6 +211,12 @@ class AuditoriaJob(models.Model):
     finaliza_em = models.DateTimeField()
     concluido_em = models.DateTimeField(null=True, blank=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["status", "finaliza_em"], name="audit_status_finish_idx"),
+            models.Index(fields=["-iniciado_em"], name="audit_recent_idx"),
+        ]
+
 
 class AuditoriaLeitorStatus(models.Model):
     class Status(models.TextChoices):
@@ -215,6 +227,11 @@ class AuditoriaLeitorStatus(models.Model):
     antena = models.ForeignKey(AntenaRFID, on_delete=models.CASCADE, related_name="auditorias")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ENERGIZADO)
     atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["status", "antena"], name="audit_reader_status_idx"),
+        ]
 
 
 class TecnicoPermissoes(models.Model):
