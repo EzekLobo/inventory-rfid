@@ -16,27 +16,38 @@ export default function HomePage() {
   const [resumo, setResumo] = useState<OperacionalResumo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
   const loadRequestId = useRef(0);
   const showLoading = useDelayedLoading(loading);
 
-  async function load() {
+  function applyDashboard(dashboard: Awaited<ReturnType<typeof api.dashboard>>) {
+    setAntenas(dashboard.antenas);
+    setResumo(dashboard.resumo);
+    setInconsistencias(dashboard.inconsistencias);
+    setTimeline(dashboard.timeline);
+  }
+
+  async function load(force = false) {
     const requestId = ++loadRequestId.current;
-    setLoading(true);
     setError("");
+    setWarning("");
+    const cached = api.dashboardCached({ force });
+    if (cached.data) {
+      applyDashboard(cached.data);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     try {
-      const [antenasData, resumoData, inconsistenciasData, timelineData] = await Promise.all([
-        api.listAntenas({ page_size: 5 }),
-        api.resumo(),
-        api.listInconsistencias({ resolvida: "false", page_size: 5 }),
-        api.listTimeline({ page_size: 8 })
-      ]);
+      const dashboard = await cached.promise;
       if (!isLatestRequest(requestId, loadRequestId)) return;
-      setAntenas(antenasData.results);
-      setResumo(resumoData);
-      setInconsistencias(inconsistenciasData.results);
-      setTimeline(timelineData.results);
+      applyDashboard(dashboard);
     } catch (err) {
       if (!isLatestRequest(requestId, loadRequestId)) return;
+      if (cached.data) {
+        setWarning("Nao foi possivel atualizar agora. Mantendo os dados carregados anteriormente.");
+        return;
+      }
       setError(err instanceof Error ? err.message : "Não foi possível carregar o painel.");
     } finally {
       if (isLatestRequest(requestId, loadRequestId)) {
@@ -81,6 +92,7 @@ export default function HomePage() {
       <section className="content-band">
         {showLoading ? <LoadingState label="Carregando painel operacional" /> : null}
         {error ? <ErrorState message={error} /> : null}
+        {warning ? <div className="process-feedback done">{warning}</div> : null}
 
         {!loading && !error ? (
           <>
@@ -97,7 +109,7 @@ export default function HomePage() {
                   <h2>Operação</h2>
                   <p>Atalhos e situação recente do sistema.</p>
                 </div>
-                <button className="button ghost" type="button" onClick={load}>
+                <button className="button ghost" type="button" onClick={() => load(true)}>
                   <RefreshCw size={18} />
                   Atualizar
                 </button>

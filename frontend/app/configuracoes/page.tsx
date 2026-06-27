@@ -67,23 +67,34 @@ export default function ConfiguracoesPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
   const [success, setSuccess] = useState("");
   const loadRequestId = useRef(0);
   const showLoading = useDelayedLoading(loading);
 
-  async function load() {
+  async function load(force = false) {
     const requestId = ++loadRequestId.current;
     setError("");
+    setWarning("");
     if (!currentUser) {
       setError("Usuário não autenticado.");
       setLoading(false);
       return;
     }
     try {
+      const locaisCached = api.listLocaisCached({ page_size: 100 }, { force });
+      const antenasCached = api.listAntenasCached({ page_size: 100 }, { force });
+      const itensCached = api.listItensCached({ page_size: 100 }, { force });
+      if (locaisCached.data) setLocais(locaisCached.data.results);
+      if (antenasCached.data) setAntenas(antenasCached.data.results);
+      if (itensCached.data) setItens(itensCached.data.results);
+      if (locaisCached.data || antenasCached.data || itensCached.data) {
+        setLoading(false);
+      }
       const [locaisData, antenasData, itensData, usuariosData, permissoesData] = await Promise.all([
-        api.listLocais({ page_size: 100 }),
-        api.listAntenas({ page_size: 100 }),
-        api.listItens({ page_size: 100 }),
+        locaisCached.promise,
+        antenasCached.promise,
+        itensCached.promise,
         currentUser.is_admin ? api.listUsuarios({ page_size: 100 }) : Promise.resolve(null),
         currentUser.is_admin ? api.listPermissoesTecnico() : Promise.resolve(null)
       ]);
@@ -96,6 +107,10 @@ export default function ConfiguracoesPage() {
       setAntenaForm((current) => ({ ...current, local_id: current.local_id || locaisData.results[0]?.id || 0 }));
     } catch (err) {
       if (!isLatestRequest(requestId, loadRequestId)) return;
+      if (locais.length > 0 || antenas.length > 0 || itens.length > 0 || usuarios.length > 0) {
+        setWarning("Nao foi possivel atualizar agora. Mantendo os dados carregados anteriormente.");
+        return;
+      }
       setError(err instanceof Error ? err.message : "Não foi possível carregar configurações.");
     } finally {
       if (isLatestRequest(requestId, loadRequestId)) {
@@ -286,7 +301,7 @@ export default function ConfiguracoesPage() {
           <h1>Configurações</h1>
           <p>Organize locais, leitores e itens usados pela sincronização e auditoria RFID.</p>
         </div>
-        <button className="button ghost" type="button" onClick={load}>
+        <button className="button ghost" type="button" onClick={() => load(true)}>
           <RefreshCw size={18} />
           Atualizar
         </button>
@@ -294,6 +309,7 @@ export default function ConfiguracoesPage() {
 
       {showLoading ? <LoadingState /> : null}
       {error ? <ErrorState message={error} /> : null}
+      {warning ? <div className="process-feedback done">{warning}</div> : null}
       {success ? <div className="process-feedback done">{success}</div> : null}
 
       {!loading ? (

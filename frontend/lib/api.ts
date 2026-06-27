@@ -5,6 +5,7 @@ import type {
   AuditoriaProcessada,
   BroadcastAuditoriaResponse,
   CurrentUser,
+  DashboardData,
   Inconsistencia,
   ItemPatrimonial,
   Local,
@@ -22,13 +23,24 @@ const RFID_TOKEN = process.env.NEXT_PUBLIC_RFID_INGEST_TOKEN || "dev-rfid-token"
 const AUTH_KEY = "inventory-rfid-auth";
 const USER_KEY = "inventory-rfid-user";
 const CACHE_TTL_MS = 30_000;
-const REQUEST_TIMEOUT_MS = 10_000;
+const STALE_CACHE_TTL_MS = 5 * 60_000;
+const REQUEST_TIMEOUT_MS = process.env.NODE_ENV === "development" ? 10_000 : 20_000;
 
 type RequestOptions = RequestInit & {
   auth?: boolean;
   rfid?: boolean;
   timeoutMs?: number;
   useCache?: boolean;
+};
+
+type CachedRequest<T> = {
+  data?: T;
+  promise: Promise<T>;
+  fromCache: boolean;
+};
+
+type CachedRequestOptions = RequestOptions & {
+  force?: boolean;
 };
 
 type CacheEntry<T> = {
@@ -51,6 +63,10 @@ type TimelineFilters = PaginationParams & {
 
 const cache = new Map<string, CacheEntry<unknown>>();
 
+function cacheKeyFor(method: string, path: string) {
+  return `${method}:${path}`;
+}
+
 function isDevelopment() {
   return process.env.NODE_ENV === "development";
 }
@@ -66,6 +82,16 @@ function logRequest(path: string, method: string, status: string | number, start
 
 function requestTimeoutError(path: string, timeoutMs: number) {
   return new Error(`Tempo esgotado ao carregar ${path} (${Math.round(timeoutMs / 1000)}s). Verifique se a API esta online.`);
+}
+
+function apiConfigurationError() {
+  if (isDevelopment()) return null;
+  if (/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/?/i.test(API_BASE_URL)) {
+    return new Error(
+      "API de producao nao configurada. Defina NEXT_PUBLIC_API_BASE_URL na Vercel como https://ezequiellobo.pythonanywhere.com/api e faca um novo deploy."
+    );
+  }
+  return null;
 }
 
 function composeSignal(signal: AbortSignal | null | undefined, timeoutMs: number, onTimeout: () => void) {
@@ -99,9 +125,12 @@ function authHeader() {
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const configurationError = apiConfigurationError();
+  if (configurationError) throw configurationError;
+
   const { auth, rfid, timeoutMs = REQUEST_TIMEOUT_MS, useCache: shouldUseCache, ...fetchOptions } = options;
   const method = fetchOptions.method || "GET";
-  const cacheKey = `${method}:${path}`;
+  const cacheKey = cacheKeyFor(method, path);
   const useCache = shouldUseCache === true && method === "GET";
   if (useCache) {
     const entry = cache.get(cacheKey) as CacheEntry<T> | undefined;
@@ -175,6 +204,39 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   if (useCache) cache.set(cacheKey, { promise, expiresAt: Date.now() + CACHE_TTL_MS });
   return promise;
+}
+
+function requestCached<T>(path: string, options: CachedRequestOptions = {}): CachedRequest<T> {
+  const { force, ...requestOptions } = options;
+  const method = requestOptions.method || "GET";
+  const cacheKey = cacheKeyFor(method, path);
+  const entry = cache.get(cacheKey) as CacheEntry<T> | undefined;
+  const hasStaleData = entry?.data !== undefined;
+
+  if (!force && hasStaleData && entry?.promise) {
+    return {
+      data: entry.data,
+      fromCache: true,
+      promise: entry.promise
+    };
+  }
+
+  const promise = request<T>(path, { ...requestOptions, useCache: false }).then((data) => {
+    cache.set(cacheKey, { data, expiresAt: Date.now() + STALE_CACHE_TTL_MS });
+    return data;
+  });
+
+  if (!force && hasStaleData) {
+    cache.set(cacheKey, { data: entry.data, expiresAt: entry.expiresAt, promise });
+    return {
+      data: entry.data,
+      fromCache: true,
+      promise
+    };
+  }
+
+  cache.set(cacheKey, { promise, expiresAt: Date.now() + STALE_CACHE_TTL_MS });
+  return { fromCache: false, promise };
 }
 
 function query(params: Record<string, string | number | boolean | undefined>) {
@@ -298,8 +360,20 @@ export const api = {
     return request<OperacionalResumo>("/resumo/", { useCache: true });
   },
 
+  dashboard() {
+    return request<DashboardData>("/dashboard/", { useCache: true });
+  },
+
+  dashboardCached(options: CachedRequestOptions = {}) {
+    return requestCached<DashboardData>("/dashboard/", options);
+  },
+
   listLocais(params: PaginationParams = {}) {
     return request<PaginatedResponse<Local>>(`/locais/${query(paginationParams(params))}`, { useCache: true });
+  },
+
+  listLocaisCached(params: PaginationParams = {}, options: CachedRequestOptions = {}) {
+    return requestCached<PaginatedResponse<Local>>(`/locais/${query(paginationParams(params))}`, options);
   },
 
   createLocal(payload: Omit<Local, "id">) {
@@ -319,6 +393,10 @@ export const api = {
 
   listAntenas(params: PaginationParams = {}) {
     return request<PaginatedResponse<Antena>>(`/antenas/${query(paginationParams(params))}`, { useCache: true });
+  },
+
+  listAntenasCached(params: PaginationParams = {}, options: CachedRequestOptions = {}) {
+    return requestCached<PaginatedResponse<Antena>>(`/antenas/${query(paginationParams(params))}`, options);
   },
 
   createAntena(payload: Pick<Antena, "nome" | "hardware_id" | "local_id" | "tipo" | "modo_comando" | "command_url" | "duracao_padrao_segundos"> & { command_token?: string }) {
@@ -367,6 +445,10 @@ export const api = {
     return request<PaginatedResponse<ItemPatrimonial>>(`/itens/${query(params)}`, { useCache: true });
   },
 
+  listItensCached(params: PaginationParams & { search?: string; ativo?: boolean | string } = {}, options: CachedRequestOptions = {}) {
+    return requestCached<PaginatedResponse<ItemPatrimonial>>(`/itens/${query(params)}`, options);
+  },
+
   createItem(payload: Pick<ItemPatrimonial, "nome" | "tag_id" | "local_logico_id" | "local_fisico_id" | "ativo">) {
     clearCache();
     return request<ItemPatrimonial>("/itens/", { method: "POST", body: JSON.stringify(payload) });
@@ -384,6 +466,13 @@ export const api = {
 
   listInconsistencias(params: PaginationParams & { resolvida?: string; tipo?: string } = {}) {
     return request<PaginatedResponse<Inconsistencia>>(`/inconsistencias/${query(params)}`, { useCache: true });
+  },
+
+  listInconsistenciasCached(
+    params: PaginationParams & { resolvida?: string; tipo?: string } = {},
+    options: CachedRequestOptions = {}
+  ) {
+    return requestCached<PaginatedResponse<Inconsistencia>>(`/inconsistencias/${query(params)}`, options);
   },
 
   resolverInconsistencia(id: number, motivo: string) {
@@ -426,12 +515,28 @@ export const api = {
     return request<PaginatedResponse<TimelineEvento>>(`/timeline/${query(params)}`, { useCache: true });
   },
 
+  listTimelineCached(filters: number | TimelineFilters = {}, options: CachedRequestOptions = {}) {
+    const params = typeof filters === "number" ? { item_id: filters } : filters;
+    return requestCached<PaginatedResponse<TimelineEvento>>(`/timeline/${query(params)}`, options);
+  },
+
   listAuditorias(params: PaginationParams = {}) {
     return request<PaginatedResponse<AuditoriaJob>>(`/auditoria/${query(paginationParams(params))}`, { useCache: true });
   },
 
+  listAuditoriasCached(params: PaginationParams = {}, options: CachedRequestOptions = {}) {
+    return requestCached<PaginatedResponse<AuditoriaJob>>(`/auditoria/${query(paginationParams(params))}`, options);
+  },
+
   listAuditoriasProcessadas(params: PaginationParams = {}) {
     return request<PaginatedResponse<AuditoriaProcessada>>(`/auditoria/processadas/${query(paginationParams(params))}`, { useCache: true });
+  },
+
+  listAuditoriasProcessadasCached(params: PaginationParams = {}, options: CachedRequestOptions = {}) {
+    return requestCached<PaginatedResponse<AuditoriaProcessada>>(
+      `/auditoria/processadas/${query(paginationParams(params))}`,
+      options
+    );
   },
 
   enviarTags(antenna_id: number, tags: string[], audit = false) {

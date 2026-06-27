@@ -26,6 +26,7 @@ export default function AntenasPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
   const [lastCommand, setLastCommand] = useState<AcionamentoResponse | null>(null);
   const [activeProcess, setActiveProcess] = useState<ActiveProcess | null>(null);
   const [finishedMessage, setFinishedMessage] = useState("");
@@ -33,16 +34,27 @@ export default function AntenasPage() {
   const loadRequestId = useRef(0);
   const showLoading = useDelayedLoading(loading);
 
-  async function load() {
+  async function load(force = false) {
     const requestId = ++loadRequestId.current;
-    setLoading(true);
     setError("");
+    setWarning("");
+    const cached = api.listAntenasCached({ page_size: 100 }, { force });
+    if (cached.data) {
+      setAntenas(cached.data.results);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     try {
-      const response = await api.listAntenas({ page_size: 100 });
+      const response = await cached.promise;
       if (!isLatestRequest(requestId, loadRequestId)) return;
       setAntenas(response.results);
     } catch (err) {
       if (!isLatestRequest(requestId, loadRequestId)) return;
+      if (cached.data) {
+        setWarning("Nao foi possivel atualizar agora. Mantendo os dados carregados anteriormente.");
+        return;
+      }
       setError(err instanceof Error ? err.message : "Não foi possível carregar leitores.");
     } finally {
       if (isLatestRequest(requestId, loadRequestId)) {
@@ -104,7 +116,7 @@ export default function AntenasPage() {
           <h1>Leitores RFID</h1>
           <p>Acione janelas de sincronização e acompanhe o status das antenas cadastradas.</p>
         </div>
-        <button className="button ghost" type="button" onClick={load}>
+        <button className="button ghost" type="button" onClick={() => load(true)}>
           <RefreshCw size={18} />
           Atualizar
         </button>
@@ -144,6 +156,7 @@ export default function AntenasPage() {
 
         {showLoading ? <LoadingState /> : null}
         {error ? <ErrorState message={error} /> : null}
+        {warning ? <div className="process-feedback done">{warning}</div> : null}
         {!loading && !error && antenas.length === 0 ? <EmptyState label="Nenhum leitor cadastrado." /> : null}
 
         {!loading && antenas.length > 0 ? (

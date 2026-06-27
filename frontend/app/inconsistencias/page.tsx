@@ -60,6 +60,7 @@ export default function InconsistenciasPage() {
   const [busy, setBusy] = useState(false);
   const [syncingGroupId, setSyncingGroupId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
   const [success, setSuccess] = useState("");
   const [action, setAction] = useState<ActionState | null>(null);
   const [motivo, setMotivo] = useState("");
@@ -74,12 +75,21 @@ export default function InconsistenciasPage() {
 
   const pageSize = 25;
 
-  async function load(nextPage = page) {
+  async function load(nextPage = page, force = false) {
     const requestId = ++loadRequestId.current;
-    if (data.length === 0) setLoading(true);
     setError("");
+    setWarning("");
     try {
-      const inconsistenciasData = await api.listInconsistencias({ resolvida, tipo, page: nextPage, page_size: pageSize });
+      const cached = api.listInconsistenciasCached({ resolvida, tipo, page: nextPage, page_size: pageSize }, { force });
+      if (cached.data) {
+        setData(cached.data.results);
+        setPageData(cached.data);
+        setPage(nextPage);
+        setLoading(false);
+      } else if (data.length === 0) {
+        setLoading(true);
+      }
+      const inconsistenciasData = await cached.promise;
       if (!isLatestRequest(requestId, loadRequestId)) return;
       setData(inconsistenciasData.results);
       setPageData(inconsistenciasData);
@@ -87,7 +97,11 @@ export default function InconsistenciasPage() {
       setLoading(false);
 
       try {
-        const [locaisData, itensData] = await Promise.all([api.listLocais({ page_size: 100 }), api.listItens({ page_size: 100 })]);
+        const locaisCached = api.listLocaisCached({ page_size: 100 });
+        const itensCached = api.listItensCached({ page_size: 100 });
+        if (locaisCached.data) setLocais(locaisCached.data.results);
+        if (itensCached.data) setItens(itensCached.data.results);
+        const [locaisData, itensData] = await Promise.all([locaisCached.promise, itensCached.promise]);
         if (!isLatestRequest(requestId, loadRequestId)) return;
         setLocais(locaisData.results);
         setItens(itensData.results);
@@ -98,6 +112,10 @@ export default function InconsistenciasPage() {
       }
     } catch (err) {
       if (!isLatestRequest(requestId, loadRequestId)) return;
+      if (data.length > 0) {
+        setWarning("Nao foi possivel atualizar agora. Mantendo os dados carregados anteriormente.");
+        return;
+      }
       setError(err instanceof Error ? err.message : "Não foi possível carregar inconsistências.");
     } finally {
       if (isLatestRequest(requestId, loadRequestId)) {
@@ -255,7 +273,7 @@ export default function InconsistenciasPage() {
               </select>
             </div>
           </div>
-          <button className="button ghost" type="button" onClick={() => load(page)}>
+          <button className="button ghost" type="button" onClick={() => load(page, true)}>
             <RefreshCw size={18} />
             Atualizar
           </button>
@@ -264,6 +282,7 @@ export default function InconsistenciasPage() {
         {success ? <div className="process-feedback done">{success}</div> : null}
         {showLoading ? <LoadingState /> : null}
         {error ? <ErrorState message={error} /> : null}
+        {warning ? <div className="process-feedback done">{warning}</div> : null}
         {!loading && !error && data.length === 0 ? <EmptyState label={resolvida === "false" ? "Nenhuma inconsistência aberta." : "Nenhuma inconsistência encontrada para os filtros atuais."} /> : null}
 
         {!loading && !error && groups.length > 0 ? (

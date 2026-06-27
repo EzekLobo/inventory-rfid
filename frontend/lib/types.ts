@@ -23,6 +23,13 @@ export type OperacionalResumo = {
   inconsistencias_abertas: number;
 };
 
+export type DashboardData = {
+  resumo: OperacionalResumo;
+  antenas: Antena[];
+  inconsistencias: Inconsistencia[];
+  timeline: TimelineEvento[];
+};
+
 export type UserPermissions = {
   gerenciar_cadastros: boolean;
   acionar_leitores: boolean;
