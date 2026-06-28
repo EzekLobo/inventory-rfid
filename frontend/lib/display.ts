@@ -72,10 +72,10 @@ export const metadataLabels: Record<string, string> = {
   tags_fora_do_local: "fora do local",
   tags_lidas: "tags lidas",
   tipo: "tipo",
-  total_antenas: "total de leitores",
+  total_antenas: "quantidade de leitores",
   total_lidos: "total lido",
-  antenna_id: "leitor",
-  antenna_ids: "leitores",
+  antenna_id: "ID do leitor",
+  antenna_ids: "IDs dos leitores",
   antenna_nome: "leitor"
 };
 
